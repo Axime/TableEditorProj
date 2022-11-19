@@ -30,13 +30,13 @@
                     <PasswordBox x:Name="PasswordBox" materialDesign:HintAssist.Hint="Password" Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"/>
                     <PasswordBox x:Name="RepeatPasswordBox" materialDesign:HintAssist.Hint="Repeat password" Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"/>
                     <TextBox x:Name="TextBoxKeyWord" materialDesign:HintAssist.Hint="Key word" Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
-                    <Button Content="Registration NOW!!!" Margin="0 20" Click="Button_Reg_Click"/>
+                    <Button Content="Registration" Margin="0 20" Click="Button_Reg_Click"/>
                 </StackPanel>
                 
                 <StackPanel x:Name="AuthForm" Visibility="Visible">
                     <TextBox x:Name="LoginField" materialDesign:HintAssist.Hint="Login" Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
                     <PasswordBox x:Name="PasswordField" materialDesign:HintAssist.Hint="Password" Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"/>
-                    <Button Content="Registration NOW!!!" Margin="0 20" Click="Button_Auth_Click"/>
+                    <Button Content="Auth" Margin="0 20" Click="Button_Auth_Click"/>
                 </StackPanel>
             </StackPanel>
         </Border>
