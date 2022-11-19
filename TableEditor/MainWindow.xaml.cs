@@ -36,6 +36,26 @@ namespace SchoolProj1
             if (Check(TextBoxLogin) && Check(PasswordBox, RepeatPasswordBox) && Check(TextBoxKeyWord)) RegistrationUser(login, password, keyWord);
 
         }
+        private void Button_Auth_Click(object sender, RoutedEventArgs e)
+        {
+            if (Check(LoginField) && Check(PasswordField)) AuthUser(LoginField.Text, PasswordField.Password);
+        }
+
+
+        void RegistrationUser(string login, string password, string keyWord)
+        {
+           
+        }
+
+        void AuthUser(string login, string password)
+        {
+            if (ChectValidateField(LoginField, PasswordField)) GoToWork();
+        }
+
+        void GoToWork()
+        {
+            Console.WriteLine("Validate user");
+        }
 
         bool Check(TextBox field)
         {
@@ -49,7 +69,13 @@ namespace SchoolProj1
             field.Background = Brushes.White;
             return true;
         }
+        bool Check(PasswordBox field)
+        {
+            string login = LoginField.Text.Trim();
 
+            if (field.Password.Length < 6) return false;
+            return true;
+        }
         bool Check(PasswordBox field1, PasswordBox field2)
         {
             if (field1.Password.Length < 6 || field1.Password != field2.Password)
@@ -62,10 +88,12 @@ namespace SchoolProj1
             field1.Background = Brushes.White;
             return true;
         }
-
-        void RegistrationUser(string login, string password, string keyWord)
+        bool ChectValidateField(TextBox login, PasswordBox password)
         {
-           
+
+
+            return true;
         }
+
     }
 }
