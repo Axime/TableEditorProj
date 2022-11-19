@@ -17,12 +17,12 @@
             <StackPanel>
                 <TextBlock Text="Hi!" FontSize="30" FontWeight="Bold" Margin="0 0 0 20"/>
                 <Grid Margin="0 0 0 20">
-                    <Button HorizontalAlignment="Left" Content="Registration">
+                    <Button HorizontalAlignment="Left" Content="Registration" Click="Button_Reg_Form_Click">
                         <Button.Effect>
                             <DropShadowEffect BlurRadius="30" Color="LightGray" ShadowDepth="0"/>
                         </Button.Effect>
                     </Button>
-                    <Button HorizontalAlignment="Right" Content="Auth" Style="{StaticResource MaterialDesignFlatButton}"></Button>
+                    <Button HorizontalAlignment="Right" Content="Auth" Click="Button_Auth_Form_Click" Style="{StaticResource MaterialDesignFlatButton}"></Button>
                 </Grid>
 
                 <StackPanel x:Name="RegistrationForm" Visibility="Collapsed">
@@ -36,8 +36,10 @@
                 <StackPanel x:Name="AuthForm" Visibility="Visible">
                     <TextBox x:Name="LoginField" materialDesign:HintAssist.Hint="Login" Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
                     <PasswordBox x:Name="PasswordField" materialDesign:HintAssist.Hint="Password" Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"/>
+                    <CheckBox x:Name="RememberAuth" Content="Rememder" FontWeight="Bold"/>
                     <Button Content="Auth" Margin="0 20" Click="Button_Auth_Click"/>
                 </StackPanel>
+                
             </StackPanel>
         </Border>
     </Grid>

@@ -40,8 +40,17 @@ namespace SchoolProj1
         {
             if (Check(LoginField) && Check(PasswordField)) AuthUser(LoginField.Text, PasswordField.Password);
         }
-
-
+        private void Button_Reg_Form_Click(object sender, RoutedEventArgs e)
+        {
+            if (AuthForm.Visibility == Visibility.Visible) AuthForm.Visibility = Visibility.Collapsed;
+            RegistrationForm.Visibility = Visibility.Visible;
+            
+        }
+        private void Button_Auth_Form_Click(object sender, RoutedEventArgs e)
+        {
+            if (RegistrationForm.Visibility == Visibility.Visible) RegistrationForm.Visibility = Visibility.Collapsed;
+            AuthForm.Visibility = Visibility.Visible;
+        }
         void RegistrationUser(string login, string password, string keyWord)
         {
            
@@ -49,7 +58,7 @@ namespace SchoolProj1
 
         void AuthUser(string login, string password)
         {
-            if (ChectValidateField(LoginField, PasswordField)) GoToWork();
+            if (ChectValidateUser(LoginField, PasswordField)) GoToWork();
         }
 
         void GoToWork()
@@ -88,12 +97,15 @@ namespace SchoolProj1
             field1.Background = Brushes.White;
             return true;
         }
-        bool ChectValidateField(TextBox login, PasswordBox password)
+        bool ChectValidateUser(TextBox login, PasswordBox password)
         {
-
-
+            return true;
+        }
+        bool CheckConnectionCerver()
+        {
             return true;
         }
 
+        
     }
 }
