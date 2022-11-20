@@ -11,18 +11,19 @@ namespace TableEditor
     {
         //URI's
         public static Uri uriDefault = new Uri("localhost");
-        public static Uri uriRegistration = new Uri("https://ivanyudin.alwaysdata.net/api/auth.registration");
-        public static Uri uriAuth = new Uri("https://ivanyudin.alwaysdata.net/api/auth.login");
+        public static string uriRegistration = "api/auth.registration";
+        public static string uriAuth = "api/auth.login";
 
         public static readonly HttpClient client = new HttpClient()
         {
-            BaseAddress = new Uri("localhost"),
+            BaseAddress = new Uri("https://localhost"),
         };
-        private static string _userToren = "undefined";
-        public static string userToken {get { return _userToren; } set{ _userToren= value;} }
+        private static string _userToken = "undefined";
+        public static string userToken {get { return _userToken; } set{ _userToken= value;} }
 
-        public static async Task<string> SendRequest(Uri uriAdress, string value)
+        public static async Task<string> SendRequest(string uriAdress, string value)
         {
+            Console.WriteLine($"=================================>{uriAdress}<===================================");
             if (value == null) return "Error";
             var response = await client.PostAsync(uriAdress, new StringContent(value, Encoding.UTF8, "application/json"));
             return await response.Content.ReadAsStringAsync();

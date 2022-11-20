@@ -63,9 +63,17 @@ namespace SchoolProj1
             };
 
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
+            try
+            {
+                string response = GlobalInforamtion.SendRequest(GlobalInforamtion.uriRegistration, information).Result.ToString();
+                Console.WriteLine(response);
 
-            string response = GlobalInforamtion.SendRequest(GlobalInforamtion.uriRegistration, information).Result.ToString();
-            Console.WriteLine(response);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error "+e.ToString());
+            }
+
 
         }
         void AuthUser(string login, string password)
@@ -77,8 +85,16 @@ namespace SchoolProj1
             };
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
 
-            string response = GlobalInforamtion.SendRequest(GlobalInforamtion.uriAuth, information).Result.ToString();
-            Console.WriteLine(response);
+
+            try
+            {
+                string response = GlobalInforamtion.SendRequest(GlobalInforamtion.uriAuth, information).Result.ToString();
+                Console.WriteLine(response);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.ToString());
+            }
         }
         void GoToWork()
         {
