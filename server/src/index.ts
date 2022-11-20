@@ -2,18 +2,19 @@ import {
   createServer,
   type RequestListener
 } from 'http';
-import env, {
+import getEnv, {
   isDebug
 } from './env.js';
 import {
   requestListener,
-} from './route.js';
+} from './routes/route.js';
 import './routes/index.js';
 
 const server = createServer(requestListener as RequestListener);
 
-server.listen(...[(
-  isDebug
-    ? [3000, 'localhost'] as const
-    : [8100, '::'] as const
-)] as const);
+server.listen(isDebug ? {
+  port: 3000
+} : {
+  port: 8100,
+  ipv6Only: true,
+});

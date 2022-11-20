@@ -15,7 +15,8 @@ Register new user
 {
   "username": "string",
   "password": "string",
-  "passwordRepeat": "string"
+  "passwordRepeat": "string",
+  "keyword": "string"
 }
 ```
 ---
