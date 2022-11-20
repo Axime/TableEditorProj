@@ -46,7 +46,7 @@ namespace SchoolProj1
         {
             if (AuthForm.Visibility == Visibility.Visible) AuthForm.Visibility = Visibility.Collapsed;
             RegistrationForm.Visibility = Visibility.Visible;
-            
+
         }
         void Button_Auth_Form_Click(object sender, RoutedEventArgs e)
         {
@@ -64,7 +64,7 @@ namespace SchoolProj1
 
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
 
-            string response = SendContent(GlobalInforamtion.uriRegistration,information).Result.ToString();
+            string response = SendContent(GlobalInforamtion.uriRegistration, information).Result.ToString();
             Console.WriteLine(response);
 
         }
@@ -84,13 +84,13 @@ namespace SchoolProj1
         {
             Console.WriteLine("Validate user");
         }
-        async Task<string> SendContent(Uri uriAdress,string value)
+        async Task<string> SendContent(Uri uriAdress, string value)
         {
-            if (value == null) return"Error";
+            if (value == null) return "Error";
             var response = await GlobalInforamtion.client.PostAsync(uriAdress, new StringContent(value, Encoding.UTF8, "application/json"));
             return await response.Content.ReadAsStringAsync();
         }
-        
+
 
         bool Check(TextBox field)
         {
@@ -106,10 +106,8 @@ namespace SchoolProj1
         }
         bool Check(PasswordBox field)
         {
-            string login = LoginField.Text.Trim();
-
-            if (field.Password.Length < 6) return false;
-            return true;
+            //string login = LoginField.Text.Trim();
+            return field.Password.Length >= 6;
         }
         bool Check(PasswordBox field1, PasswordBox field2)
         {
