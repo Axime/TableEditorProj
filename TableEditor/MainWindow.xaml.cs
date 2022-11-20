@@ -84,7 +84,7 @@ namespace SchoolProj1
         {
             Console.WriteLine("Validate user");
         }
-        async Task<string> SendContent(Uri uriAdress, string value)
+        async Task<string> SendContent(Uri uriAdress,string value)
         {
             if (value == null) return "Error";
             var response = await GlobalInforamtion.client.PostAsync(uriAdress, new StringContent(value, Encoding.UTF8, "application/json"));
