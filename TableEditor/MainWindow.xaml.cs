@@ -18,6 +18,8 @@ using System.Windows.Media.Animation;
 using Newtonsoft.Json.Linq;
 using Microsoft.VisualBasic;
 using TableEditor;
+using System.Threading;
+using MaterialDesignThemes.Wpf;
 
 namespace SchoolProj1
 {
@@ -30,12 +32,19 @@ namespace SchoolProj1
 
         void Button_Reg_Click(object sender, RoutedEventArgs e)
         {
-            string login = TextBoxLogin.Text.Trim();
-            string password = PasswordBox.Password.Trim();
-            string repeatPassword = RepeatPasswordBox.Password.Trim();
-            string keyWord = TextBoxKeyWord.Text.ToLower().Trim();
+            RegistrationUserForm a = new()
+            {
+                /*string */
+                username = TextBoxLogin.Text.Trim(),
+                /*string */
+                password = PasswordBox.Password.Trim(),
+                /*string */
+                passwordRepeat = RepeatPasswordBox.Password.Trim(),
+                /*string */
+                keyword = TextBoxKeyWord.Text.ToLower().Trim(),
+            };
 
-            if (Check(TextBoxLogin) && Check(PasswordBox, RepeatPasswordBox) && Check(TextBoxKeyWord)) RegistrationUser(login, password, keyWord);
+            if (Check(TextBoxLogin) && Check(PasswordBox, RepeatPasswordBox) && Check(TextBoxKeyWord)) RegistrationUser(a);
 
         }
         void Button_Auth_Click(object sender, RoutedEventArgs e)
@@ -53,30 +62,23 @@ namespace SchoolProj1
             if (RegistrationForm.Visibility == Visibility.Visible) RegistrationForm.Visibility = Visibility.Collapsed;
             AuthForm.Visibility = Visibility.Visible;
         }
-        void RegistrationUser(string login, string password, string keyWord)
+        async void RegistrationUser(RegistrationUserForm user)
         {
-            RegistrationUserForm user = new()
-            {
-                username = login,
-                password = password,
-                keyword = keyWord,
-            };
-
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
             try
             {
-                string response = GlobalInformation.SendRequest(GlobalInformation.uriRegistration, information).Result.ToString();
+                var response = await GlobalInformation.SendRequest(GlobalInformation.uriRegistration, information);
                 Console.WriteLine(response);
 
             }
             catch (Exception e)
             {
-                Console.WriteLine("Error "+e.ToString());
+                Console.WriteLine("Error " + e.ToString());
             }
 
 
         }
-        void AuthUser(string login, string password)
+        async void AuthUser(string login, string password)
         {
             AuthUserForm user = new()
             {
@@ -88,7 +90,7 @@ namespace SchoolProj1
 
             try
             {
-                string response =  GlobalInformation.SendRequest(GlobalInformation.uriAuth, information).Result.ToString();
+                string response = await GlobalInformation.SendRequest(GlobalInformation.uriAuth, information);
                 Console.WriteLine(response);
             }
             catch (Exception e)
@@ -106,7 +108,7 @@ namespace SchoolProj1
         {
             if (field.Text.Length < 6)
             {
-                field.ToolTip = "Uncorrect";
+                field.ToolTip = "Incorrect";
                 field.Background = Brushes.IndianRed;
                 return false;
             }
@@ -123,7 +125,7 @@ namespace SchoolProj1
         {
             if (field1.Password.Length < 6 || field1.Password != field2.Password)
             {
-                field1.ToolTip = "Uncorrect";
+                field1.ToolTip = "Incorrect";
                 field1.Background = Brushes.IndianRed;
                 return false;
             }
@@ -133,16 +135,17 @@ namespace SchoolProj1
         }
 
 
-        class RegistrationUserForm
+        struct RegistrationUserForm
         {
-            public string username { get; set; }
-            public string password { get; set; }
-            public string keyword { get; set; }
+            public string username;
+            public string passwordRepeat;
+            public string password;
+            public string keyword;
         }
-        class AuthUserForm
+        struct AuthUserForm
         {
-            public string username { get; set; }
-            public string password { get; set; }
+            public string username;
+            public string password;
         }
     }
 }
