@@ -21,9 +21,6 @@ using TableEditor;
 
 namespace SchoolProj1
 {
-    /// <summary>
-    /// Логика взаимодействия для MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         public MainWindow()
@@ -94,6 +91,7 @@ namespace SchoolProj1
             return await response.Content.ReadAsStringAsync();
         }
         
+
         bool Check(TextBox field)
         {
             if (field.Text.Length < 6)
@@ -125,15 +123,6 @@ namespace SchoolProj1
             field1.Background = Brushes.White;
             return true;
         }
-        bool CheckValidateUser(TextBox login, PasswordBox password)
-        {
-            return true;
-        }
-        bool CheckConnectionCerver()
-        {
-            return true;
-        }
-
 
 
         class RegistrationUserForm
