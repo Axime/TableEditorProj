@@ -64,7 +64,7 @@ namespace SchoolProj1
 
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
 
-            string response = SendContent(GlobalInforamtion.uriRegistration, information).Result.ToString();
+            string response = GlobalInforamtion.SendContent(GlobalInforamtion.uriRegistration, information).Result.ToString();
             Console.WriteLine(response);
 
         }
@@ -77,18 +77,12 @@ namespace SchoolProj1
             };
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
 
-            string response = SendContent(GlobalInforamtion.uriAuth, information).Result.ToString();
+            string response = GlobalInforamtion.SendContent(GlobalInforamtion.uriAuth, information).Result.ToString();
             Console.WriteLine(response);
         }
         void GoToWork()
         {
             Console.WriteLine("Validate user");
-        }
-        async Task<string> SendContent(Uri uriAdress,string value)
-        {
-            if (value == null) return "Error";
-            var response = await GlobalInforamtion.client.PostAsync(uriAdress, new StringContent(value, Encoding.UTF8, "application/json"));
-            return await response.Content.ReadAsStringAsync();
         }
 
 

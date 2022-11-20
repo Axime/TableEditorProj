@@ -21,5 +21,12 @@ namespace TableEditor
         private static string _userToren = "undefined";
         public static string userToken {get { return _userToren; } set{ _userToren= value;} }
 
+        public static async Task<string> SendContent(Uri uriAdress, string value)
+        {
+            if (value == null) return "Error";
+            var response = await client.PostAsync(uriAdress, new StringContent(value, Encoding.UTF8, "application/json"));
+            return await response.Content.ReadAsStringAsync();
+        }
+
     }
 }
