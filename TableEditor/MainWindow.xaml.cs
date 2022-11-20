@@ -64,7 +64,7 @@ namespace SchoolProj1
 
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
 
-            string response = GlobalInforamtion.SendContent(GlobalInforamtion.uriRegistration, information).Result.ToString();
+            string response = GlobalInforamtion.SendRequest(GlobalInforamtion.uriRegistration, information).Result.ToString();
             Console.WriteLine(response);
 
         }
@@ -77,7 +77,7 @@ namespace SchoolProj1
             };
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
 
-            string response = GlobalInforamtion.SendContent(GlobalInforamtion.uriAuth, information).Result.ToString();
+            string response = GlobalInforamtion.SendRequest(GlobalInforamtion.uriAuth, information).Result.ToString();
             Console.WriteLine(response);
         }
         void GoToWork()
