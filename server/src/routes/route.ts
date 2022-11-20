@@ -62,6 +62,7 @@ export const findRoute = (path: string) => routes.find(route => route.checkPath(
 
 
 export const requestListener: RequestListenerFn<any> = async (req, res) => {
+  console.log(`[Главный обработчик]: входящий запрос, url${req.url}`)
   res.sendResponse = function (response, statusCode = response instanceof SuccessfulResponse ? 200 : 400) {
     this.writeHead(statusCode, STATUS_CODES[statusCode]);
     this.write(response.toString());

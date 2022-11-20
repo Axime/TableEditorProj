@@ -65,7 +65,7 @@ namespace SchoolProj1
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
             try
             {
-                string response = GlobalInforamtion.SendRequest(GlobalInforamtion.uriRegistration, information).Result.ToString();
+                string response = GlobalInformation.SendRequest(GlobalInformation.uriRegistration, information).Result.ToString();
                 Console.WriteLine(response);
 
             }
@@ -88,7 +88,7 @@ namespace SchoolProj1
 
             try
             {
-                string response = GlobalInforamtion.SendRequest(GlobalInforamtion.uriAuth, information).Result.ToString();
+                string response =  GlobalInformation.SendRequest(GlobalInformation.uriAuth, information).Result.ToString();
                 Console.WriteLine(response);
             }
             catch (Exception e)

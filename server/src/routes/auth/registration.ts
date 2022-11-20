@@ -14,6 +14,7 @@ RegisterRoute(new Route<RegistrationRequiredProps>(
   '/api/auth.registration',
   (req, res) => {
     // TODO: Add registration route
+    console.log("[Registration]: Запрос на регистрацию");
     res.sendResponse(new SuccessfulResponse({
       123: 'Hello',
       Hello: 'world!'

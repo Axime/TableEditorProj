@@ -10,7 +10,8 @@ import {
 } from 'zlib';
 import {
   writeFile,
-  readFileSync
+  readFileSync,
+  unlink
 } from 'fs';
 
 interface MapElement<T, P extends (keyof T)[]> {
@@ -36,7 +37,7 @@ class FileMap<T extends Record<string, any>, P extends (keyof T)[]> {
   get #mapPath() { return join(this.$pathToDir, 'map.json'); }
   #map: MapElement<T, P>[] = [];
   #load() {
-    this.#map = JSON.parse(readFileSync(this.#mapPath, 'binary'));
+    this.#map = JSON.parse(readFileSync(this.#mapPath, 'binary') || '[]');
   }
   #write() {
     writeFile(this.#mapPath, JSON.stringify(this.#map), {
@@ -50,7 +51,7 @@ class FileMap<T extends Record<string, any>, P extends (keyof T)[]> {
       file: doc.$name,
       props: Object.fromEntries(
         Object
-          .entries(doc)
+          .entries(doc.$data)
           .filter(([k]) => this.mapPropName.includes(k))
       ) as MapElement<T, P>['props']
     });
@@ -67,7 +68,7 @@ class FileMap<T extends Record<string, any>, P extends (keyof T)[]> {
         if (key in props && filter[key] !== props[key]) return false;
       }
       return true;
-    });
+    }).map(el => el.file);
   }
 }
 
@@ -90,10 +91,7 @@ export default class Schema<T extends Record<string, any>, P extends (keyof T)[]
     return new Document(
       JSON.parse(
         brotliDecompressSync(
-          readFileSync(
-            join(this.$pathToDir, name), {
-            encoding: 'binary'
-          })
+          readFileSync(join(this.$pathToDir, name))
         ).toString('utf-8')
       ),
       false,
@@ -104,13 +102,18 @@ export default class Schema<T extends Record<string, any>, P extends (keyof T)[]
   #writeDoc(doc: Document<T>) {
     brotliCompress(JSON.stringify(doc.$data), (err, res) => {
       if (err) return console.error(err);
-      writeFile(join(this.$pathToDir,), res, () => void 0);
+      writeFile(join(this.$pathToDir, doc.$name), res, () => void 0);
+    });
+  }
+  #deleteDoc(doc: Document<T>) {
+    unlink(join(this.$pathToDir, doc.$name), (err) => {
+      if (err) console.error(err)
     });
   }
 
 
   public save(doc: Document<T>) {
-    if (!doc.$edited) return false;
+    if (!doc.$edited && !doc.$new || doc.$deleted) return false;
     this.#map.update(doc);
     this.#writeDoc(doc)
     return true;
@@ -122,9 +125,11 @@ export default class Schema<T extends Record<string, any>, P extends (keyof T)[]
 
   public delete(doc: Document<T>) {
     this.#map.update(doc);
+    this.#deleteDoc(doc);
   }
 
   public find(filter: Partial<T>) {
     const docs = this.#map.find(filter);
+    return docs.map(doc => this.#readDoc(doc))
   }
 }
