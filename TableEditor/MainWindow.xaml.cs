@@ -13,6 +13,11 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.Net.Http;
+using Newtonsoft.Json;
+using System.Windows.Media.Animation;
+using Newtonsoft.Json.Linq;
+using Microsoft.VisualBasic;
+using TableEditor;
 
 namespace SchoolProj1
 {
@@ -53,16 +58,42 @@ namespace SchoolProj1
         }
         void RegistrationUser(string login, string password, string keyWord)
         {
-           
+            RegistrationUserForm user = new()
+            {
+                username = login,
+                password = password,
+                keyword = keyWord,
+            };
+
+            string information = JsonConvert.SerializeObject(user, Formatting.Indented);
+
+            string response = SendContent(GlobalInforamtion.uriRegistration,information).Result.ToString();
+            Console.WriteLine(response);
+
         }
         void AuthUser(string login, string password)
         {
-            if (CheckValidateUser(LoginField, PasswordField)) GoToWork();
+            AuthUserForm user = new()
+            {
+                username = login,
+                password = password,
+            };
+            string information = JsonConvert.SerializeObject(user, Formatting.Indented);
+
+            string response = SendContent(GlobalInforamtion.uriAuth, information).Result.ToString();
+            Console.WriteLine(response);
         }
         void GoToWork()
         {
             Console.WriteLine("Validate user");
         }
+        async Task<string> SendContent(Uri uriAdress,string value)
+        {
+            if (value == null) return"Error";
+            var response = await GlobalInforamtion.client.PostAsync(uriAdress, new StringContent(value, Encoding.UTF8, "application/json"));
+            return await response.Content.ReadAsStringAsync();
+        }
+        
         bool Check(TextBox field)
         {
             if (field.Text.Length < 6)
@@ -103,6 +134,18 @@ namespace SchoolProj1
             return true;
         }
 
-        
+
+
+        class RegistrationUserForm
+        {
+            public string username { get; set; }
+            public string password { get; set; }
+            public string keyword { get; set; }
+        }
+        class AuthUserForm
+        {
+            public string username { get; set; }
+            public string password { get; set; }
+        }
     }
 }

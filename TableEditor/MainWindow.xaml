@@ -15,7 +15,7 @@
             </Border.Effect>
 
             <StackPanel>
-                <TextBlock Text="Hi!" FontSize="30" FontWeight="Bold" Margin="0 0 0 20"/>
+                <TextBlock Text="Table Editor" FontSize="30" FontWeight="Bold" Margin="0 0 0 20"/>
                 <Grid Margin="0 0 0 20">
                     <Button HorizontalAlignment="Left" Content="Registration" Click="Button_Reg_Form_Click">
                         <Button.Effect>
