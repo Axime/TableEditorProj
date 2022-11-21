@@ -18,6 +18,7 @@ using System.Windows.Media.Animation;
 using Newtonsoft.Json.Linq;
 using Microsoft.VisualBasic;
 using TableEditor;
+using ReqestModel;
 using System.Threading;
 using MaterialDesignThemes.Wpf;
 
@@ -32,7 +33,7 @@ namespace SchoolProj1
 
         void Button_Reg_Click(object sender, RoutedEventArgs e)
         {
-            RegistrationUserForm a = new()
+            ReqestModels.RegistrationUserForm a = new()
             {
                 /*string */
                 username = TextBoxLogin.Text.Trim(),
@@ -80,7 +81,7 @@ namespace SchoolProj1
         }
         async void AuthUser(string login, string password)
         {
-            AuthUserForm user = new()
+            ReqestModels.AuthUserForm user = new()
             {
                 username = login,
                 password = password,
@@ -132,20 +133,6 @@ namespace SchoolProj1
             field1.ToolTip = "Correct";
             field1.Background = Brushes.White;
             return true;
-        }
-
-
-        struct RegistrationUserForm
-        {
-            public string username;
-            public string passwordRepeat;
-            public string password;
-            public string keyword;
-        }
-        struct AuthUserForm
-        {
-            public string username;
-            public string password;
         }
     }
 }
