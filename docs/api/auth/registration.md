@@ -21,7 +21,8 @@ Register new user
 ```
 ---
 ## Response
-Response is boolean `true`
 ```jsonc
-true
+{
+  "success": true
+}
 ```

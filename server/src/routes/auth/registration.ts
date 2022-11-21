@@ -16,8 +16,7 @@ RegisterRoute(new Route<RegistrationRequiredProps>(
     // TODO: Add registration route
     console.log("[Registration]: Запрос на регистрацию");
     res.sendResponse(new SuccessfulResponse({
-      123: 'Hello',
-      Hello: 'world!'
+      success: true
     }));
   },
   [Methods.post],

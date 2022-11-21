@@ -18,7 +18,9 @@ Logout new user
 ```
 ---
 ## Response
-Returns boolean value `true`
+
 ```jsonc
-true
+{
+  "success": true
+}
 ```

@@ -29,7 +29,7 @@
                     <TextBox x:Name="TextBoxLogin" materialDesign:HintAssist.Hint="Login" Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
                     <PasswordBox x:Name="PasswordBox" materialDesign:HintAssist.Hint="Password" Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"/>
                     <PasswordBox x:Name="RepeatPasswordBox" materialDesign:HintAssist.Hint="Repeat password" Style="{StaticResource MaterialDesignFloatingHintPasswordBox}"/>
-                    <TextBox x:Name="TextBoxKeyWord" materialDesign:HintAssist.Hint="Key word" Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
+                    <TextBox x:Name="TextBoxKeyword" materialDesign:HintAssist.Hint="Key word" Style="{StaticResource MaterialDesignFloatingHintTextBox}"/>
                     <Button Content="Registration" Margin="0 20" Click="Button_Reg_Click"/>
                 </StackPanel>
                 

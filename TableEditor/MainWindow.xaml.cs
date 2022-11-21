@@ -1,26 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Net.Http;
-using Newtonsoft.Json;
-using System.Windows.Media.Animation;
-using Newtonsoft.Json.Linq;
-using Microsoft.VisualBasic;
-using TableEditor;
-using ReqestModels.Models;
-using System.Threading;
-using MaterialDesignThemes.Wpf;
+
 
 namespace SchoolProj1
 {
@@ -33,24 +15,24 @@ namespace SchoolProj1
 
         void Button_Reg_Click(object sender, RoutedEventArgs e)
         {
-            RegistrationUserForm a = new()
-            {
-                /*string */
-                username = TextBoxLogin.Text.Trim(),
-                /*string */
-                password = PasswordBox.Password.Trim(),
-                /*string */
-                passwordRepeat = RepeatPasswordBox.Password.Trim(),
-                /*string */
-                keyword = TextBoxKeyWord.Text.ToLower().Trim(),
-            };
-
-            if (Check(TextBoxLogin) && Check(PasswordBox, RepeatPasswordBox) && Check(TextBoxKeyWord)) RegistrationUser(a);
+            if (Check(TextBoxLogin) && Check(PasswordBox, RepeatPasswordBox) && Check(TextBoxKeyword))
+                RegistrationUser(new()
+                {
+                    username = TextBoxLogin.Text.Trim(),
+                    password = PasswordBox.Password.Trim(),
+                    passwordRepeat = RepeatPasswordBox.Password.Trim(),
+                    keyword = TextBoxKeyword.Text.ToLower().Trim(),
+                });
 
         }
         void Button_Auth_Click(object sender, RoutedEventArgs e)
         {
-            if (Check(LoginField) && Check(PasswordField)) AuthUser(LoginField.Text, PasswordField.Password);
+            if (Check(LoginField) && Check(PasswordField))
+                AuthUser(new()
+                {
+                    username = LoginField.Text,
+                    password = PasswordField.Password
+                });
         }
         void Button_Reg_Form_Click(object sender, RoutedEventArgs e)
         {
@@ -63,14 +45,14 @@ namespace SchoolProj1
             if (RegistrationForm.Visibility == Visibility.Visible) RegistrationForm.Visibility = Visibility.Collapsed;
             AuthForm.Visibility = Visibility.Visible;
         }
-        async void RegistrationUser(RegistrationUserForm user)
+        async void RegistrationUser(API.Auth.Registration.Request user)
         {
-            string information = JsonConvert.SerializeObject(user, Formatting.Indented);
+
             try
             {
-                    /*Реализация говна*/
-                string response = await GlobalInformation.SendRequest(GlobalInformation.uriRegistration, information);
-                if (response == "true")
+                var response = await API.Auth.Registration.Call(user);
+
+                if (response != null && response.ok && response.response!.success)
                 {
                     Console.WriteLine("Регистрация прошла успешно");
                     Console.WriteLine("Загрузка...");
@@ -89,19 +71,11 @@ namespace SchoolProj1
 
 
         }
-        async void AuthUser(string login, string password)
+        async void AuthUser(API.Auth.Login.Request data)
         {
-            AuthUserForm user = new()
-            {
-                username = login,
-                password = password,
-            };
-            string information = JsonConvert.SerializeObject(user, Formatting.Indented);
-
-
             try
             {
-                string response = await GlobalInformation.SendRequest(GlobalInformation.uriAuth, information);
+                var response = await API.Auth.Login.Call(data);
                 Console.WriteLine(response);
             }
             catch (Exception e)
@@ -109,11 +83,6 @@ namespace SchoolProj1
                 Console.WriteLine(e.ToString());
             }
         }
-        void GoToWork()
-        {
-            Console.WriteLine("Validate user");
-        }
-
 
         bool Check(TextBox field)
         {
@@ -127,11 +96,7 @@ namespace SchoolProj1
             field.Background = Brushes.White;
             return true;
         }
-        bool Check(PasswordBox field)
-        {
-            //string login = LoginField.Text.Trim();
-            return field.Password.Length >= 6;
-        }
+        bool Check(PasswordBox field) => field.Password.Length >= 6;
         bool Check(PasswordBox field1, PasswordBox field2)
         {
             if (field1.Password.Length < 6 || field1.Password != field2.Password)
