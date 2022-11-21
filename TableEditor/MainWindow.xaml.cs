@@ -18,7 +18,7 @@ using System.Windows.Media.Animation;
 using Newtonsoft.Json.Linq;
 using Microsoft.VisualBasic;
 using TableEditor;
-using ReqestModel;
+using ReqestModels.Models;
 using System.Threading;
 using MaterialDesignThemes.Wpf;
 
@@ -33,7 +33,7 @@ namespace SchoolProj1
 
         void Button_Reg_Click(object sender, RoutedEventArgs e)
         {
-            ReqestModels.RegistrationUserForm a = new()
+            RegistrationUserForm a = new()
             {
                 /*string */
                 username = TextBoxLogin.Text.Trim(),
@@ -63,7 +63,7 @@ namespace SchoolProj1
             if (RegistrationForm.Visibility == Visibility.Visible) RegistrationForm.Visibility = Visibility.Collapsed;
             AuthForm.Visibility = Visibility.Visible;
         }
-        async void RegistrationUser(ReqestModels.RegistrationUserForm user)
+        async void RegistrationUser(RegistrationUserForm user)
         {
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
             try
@@ -81,7 +81,7 @@ namespace SchoolProj1
         }
         async void AuthUser(string login, string password)
         {
-            ReqestModels.AuthUserForm user = new()
+            AuthUserForm user = new()
             {
                 username = login,
                 password = password,

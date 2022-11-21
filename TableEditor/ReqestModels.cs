@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ReqestModel
+namespace ReqestModels
 {
-    public static class ReqestModels
+
+    namespace Models
     {
         public struct RegistrationUserForm
         {
@@ -14,11 +15,13 @@ namespace ReqestModel
             public string passwordRepeat;
             public string password;
             public string keyword;
+
         }
         public struct AuthUserForm
         {
             public string username;
             public string password;
+
         }
     }
 }

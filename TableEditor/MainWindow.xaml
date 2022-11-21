@@ -39,7 +39,9 @@
                     <CheckBox x:Name="RememberAuth" Content="Rememder" FontWeight="Bold"/>
                     <Button Content="Auth" Margin="0 20" Click="Button_Auth_Click"/>
                 </StackPanel>
-                
+
+                <TextBlock x:Name="ErrorField" FontSize="17" FontWeight="Bold" Foreground="Red" Visibility="Collapsed"/>
+
             </StackPanel>
         </Border>
     </Grid>
