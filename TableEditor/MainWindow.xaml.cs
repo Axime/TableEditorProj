@@ -63,7 +63,7 @@ namespace SchoolProj1
             if (RegistrationForm.Visibility == Visibility.Visible) RegistrationForm.Visibility = Visibility.Collapsed;
             AuthForm.Visibility = Visibility.Visible;
         }
-        async void RegistrationUser(RegistrationUserForm user)
+        async void RegistrationUser(ReqestModels.RegistrationUserForm user)
         {
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
             try
