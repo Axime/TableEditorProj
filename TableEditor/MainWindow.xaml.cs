@@ -68,8 +68,18 @@ namespace SchoolProj1
             string information = JsonConvert.SerializeObject(user, Formatting.Indented);
             try
             {
-                var response = await GlobalInformation.SendRequest(GlobalInformation.uriRegistration, information);
-                Console.WriteLine(response);
+                    /*Реализация говна*/
+                string response = await GlobalInformation.SendRequest(GlobalInformation.uriRegistration, information);
+                if (response == "true")
+                {
+                    Console.WriteLine("Регистрация прошла успешно");
+                    Console.WriteLine("Загрузка...");
+                }
+                else
+                {
+                    ErrorField.Visibility = Visibility.Visible;
+                    ErrorField.Text = "Неправильный логин или пароль";
+                }
 
             }
             catch (Exception e)
