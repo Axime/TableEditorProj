@@ -5,6 +5,7 @@ import {
 } from 'http';
 import parseBody from '../body-parser.js';
 import ErrorCodes from '../error.js';
+import Logger from '../log.js';
 import { FailedResponse, ResponseBase, SuccessfulResponse } from './response.js';
 
 type RequestListenerFn<T = null> = (req: IncomingMessage & {
@@ -62,7 +63,11 @@ export const findRoute = (path: string) => routes.find(route => route.checkPath(
 
 
 export const requestListener: RequestListenerFn<any> = async (req, res) => {
-  console.log(`[Главный обработчик]: входящий запрос, url${req.url}`)
+  Logger.debugLog(
+    '%s: входящий запрос, url = %s',
+    Logger.colorString(Logger.Colors.Magenta, '[Главный обработчик]', true),
+    Logger.colorString(Logger.Colors.Cyan, req.url!, true),
+  )
   res.sendResponse = function (response, statusCode = response instanceof SuccessfulResponse ? 200 : 400) {
     this.writeHead(statusCode, STATUS_CODES[statusCode]);
     this.write(response.toString());
@@ -81,7 +86,7 @@ export const requestListener: RequestListenerFn<any> = async (req, res) => {
     route.handleRequest(req, res);
 
   } catch (e) {
-    console.error(e);
+    Logger.error(e as Error);
     res.sendResponse(new FailedResponse(ErrorCodes.InternalServerError, 'Internal server error'), 500);
   } finally {
     if (!res.closed) res.end();

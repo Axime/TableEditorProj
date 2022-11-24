@@ -1,4 +1,5 @@
-import ErrorCodes from '../error.js';
+import ErrorCodes, { ServerError } from '../error.js';
+import Logger from '../log.js';
 
 export abstract class ResponseBase<T> {
   constructor(
@@ -19,7 +20,8 @@ export class SuccessfulResponse<T> extends ResponseBase<T> {
 }
 
 export class FailedResponse extends ResponseBase<null> {
-  constructor(error: ErrorCodes, errorDescription: string) {
+  constructor(...args: [error: ErrorCodes, errorDescription: string] | [error: ServerError]) {
+    const [error, errorDescription] = args.length === 2 ? args : [args[0].code, args[0].message];
     super(false, error, errorDescription, null);
   }
 }

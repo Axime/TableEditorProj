@@ -4,15 +4,16 @@ import {
   join
 } from 'path';
 import {
-  brotliCompress,
-  type CompressCallback,
+  brotliCompressSync,
   brotliDecompressSync,
 } from 'zlib';
 import {
-  writeFile,
+  writeFileSync,
   readFileSync,
   unlink
 } from 'fs';
+import { DocumentWithSuchPrimaryKeyAlreadyExist as DocumentWithSuchPrimaryValuesAlreadyExist } from './error.js';
+import Logger from '../../log.js';
 
 interface MapElement<T, P extends (keyof T)[]> {
   file: string;
@@ -37,14 +38,17 @@ class FileMap<T extends Record<string, any>, P extends (keyof T)[]> {
   get #mapPath() { return join(this.$pathToDir, 'map.json'); }
   #map: MapElement<T, P>[] = [];
   #load() {
-    this.#map = JSON.parse(readFileSync(this.#mapPath, 'binary') || '[]');
+    this.#map = JSON.parse(readFileSync(this.#mapPath, 'utf-8') || '[]');
   }
   #write() {
-    writeFile(this.#mapPath, JSON.stringify(this.#map), {
-      encoding: 'binary',
-    }, err => {
-      if (err) console.error(err);
-    });
+    try {
+
+      writeFileSync(this.#mapPath, JSON.stringify(this.#map), {
+        encoding: 'utf-8',
+      });
+    } catch (e) {
+      if (e) console.error(e);
+    }
   }
   #add(doc: Document<T>) {
     this.#map.push({
@@ -70,6 +74,10 @@ class FileMap<T extends Record<string, any>, P extends (keyof T)[]> {
       return true;
     }).map(el => el.file);
   }
+  public checkIfDocumentWithSamePrimaryValuesExists(doc: Document<T>): boolean {
+    const data = doc.$data;
+    return !!this.#map.find(mapDoc => this.mapPropName.every(prop => mapDoc.props[prop] === data[prop]));
+  }
 }
 
 export default class Schema<T extends Record<string, any>, P extends (keyof T)[]> {
@@ -85,42 +93,50 @@ export default class Schema<T extends Record<string, any>, P extends (keyof T)[]
     return join(Schema.DataDirPath, `${this.name}s`);
   }
   // Used for searching of documents
-  #map: FileMap<T, P>;
-
+  readonly #map: FileMap<T, P>;
+  readonly #cache = new Map<string, T>;
   #readDoc(name: string): Document<T> {
     return new Document(
-      JSON.parse(
-        brotliDecompressSync(
-          readFileSync(join(this.$pathToDir, name))
-        ).toString('utf-8')
-      ),
+      this.#cache.has(name)
+        ? this.#cache.get(name)!
+        : (data => {
+          this.#cache.set(name, data);
+          return data;
+        })(JSON.parse(
+          brotliDecompressSync(
+            readFileSync(join(this.$pathToDir, name))
+          ).toString('utf-8')
+        ) as T),
       false,
       this, name
     );
   }
 
   #writeDoc(doc: Document<T>) {
-    brotliCompress(JSON.stringify(doc.$data), (err, res) => {
-      if (err) return console.error(err);
-      writeFile(join(this.$pathToDir, doc.$name), res, () => void 0);
-    });
+    try {
+      writeFileSync(join(this.$pathToDir, doc.$name), brotliCompressSync(JSON.stringify(doc.$data)));
+      this.#cache.set(doc.$name, doc.$data);
+    } catch (err) {
+      if (err) Logger.error(err as Error);
+    }
   }
   #deleteDoc(doc: Document<T>) {
     unlink(join(this.$pathToDir, doc.$name), (err) => {
-      if (err) console.error(err)
+      if (err) Logger.error(err)
     });
   }
 
 
   public save(doc: Document<T>) {
     if (!doc.$edited && !doc.$new || doc.$deleted) return false;
+    if (this.#map.checkIfDocumentWithSamePrimaryValuesExists(doc)) throw new DocumentWithSuchPrimaryValuesAlreadyExist();
     this.#map.update(doc);
-    this.#writeDoc(doc)
+    this.#writeDoc(doc);
     return true;
   }
 
-  public create(data: T): Document<T, this> {
-    return new Document(data, true, this);
+  public create(data: T): Document<T, this> & T {
+    return new Document(data, true, this) as Document<T, this> & T;
   }
 
   public delete(doc: Document<T>) {
