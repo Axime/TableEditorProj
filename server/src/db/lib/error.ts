@@ -5,7 +5,7 @@ export class DbError extends Error {
   }
 }
 
-export class DocumentWithSuchPrimaryKeyAlreadyExist extends DbError {
+export class DocumentWithSuchPrimaryValuesAlreadyExist extends DbError {
   constructor() {
     super('Document with such values of primary keys already exists');
   }

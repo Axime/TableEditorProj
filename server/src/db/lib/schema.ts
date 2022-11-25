@@ -10,9 +10,11 @@ import {
 import {
   writeFileSync,
   readFileSync,
-  unlink
+  unlink,
+  existsSync,
+  mkdirSync,
 } from 'fs';
-import { DocumentWithSuchPrimaryKeyAlreadyExist as DocumentWithSuchPrimaryValuesAlreadyExist } from './error.js';
+import { DocumentWithSuchPrimaryValuesAlreadyExist } from './error.js';
 import Logger from '../../log.js';
 
 interface MapElement<T, P extends (keyof T)[]> {
@@ -38,11 +40,14 @@ class FileMap<T extends Record<string, any>, P extends (keyof T)[]> {
   get #mapPath() { return join(this.$pathToDir, 'map.json'); }
   #map: MapElement<T, P>[] = [];
   #load() {
+    if (!existsSync(this.$pathToDir)) mkdirSync(this.$pathToDir);
+    if (!existsSync(this.#mapPath)) writeFileSync(this.#mapPath, '[]', {
+      encoding: 'utf-8',
+    })
     this.#map = JSON.parse(readFileSync(this.#mapPath, 'utf-8') || '[]');
   }
   #write() {
     try {
-
       writeFileSync(this.#mapPath, JSON.stringify(this.#map), {
         encoding: 'utf-8',
       });
