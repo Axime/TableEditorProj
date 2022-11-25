@@ -50,16 +50,14 @@ namespace Logger {
       case LogType.Standard: return Colors.Yellow;
     }
   }
-  const constructFormatString = (type: LogType, format: string, colors: boolean = true) => {
-    return `${colorString(Colors.Green, `${new Date().toISOString()}`, colors)} ${colorString(logTypeToColor(type), `[${type}]`, colors)}: ${format}`;
-  }
+  const constructFormatString = (type: LogType, format: string, colors: boolean = true) => `${colorString(Colors.Green, `${new Date().toISOString()}`, colors)} ${colorString(logTypeToColor(type), `[${type}]`, colors)}: ${format}`
   const internalLog = (type: LogType, format: string, ...args: any[]) => {
     console.log(formatWithOptions({
       colors: true,
       showProxy: false,
     }, constructFormatString(type, format), ...args));
     if (isDebug) return;
-    const str = formatWithOptions({
+    const str = '\n' + formatWithOptions({
       showHidden: false,
       compact: true,
       colors: false,
@@ -68,11 +66,9 @@ namespace Logger {
     appendFileSync(LogFile, str);
   }
 
-  export function error(...args: LogArgs | [error: Error]) {
-    internalLog(LogType.Error, args[0] instanceof Error ? '%O' : args[0], ...args.slice(+!(args[0] instanceof Error)));
-  }
-  export function log(...args: LogArgs) { internalLog(LogType.Standard, ...args) }
-  export function debugLog(...args: LogArgs) { if (!isDebug) return; internalLog(LogType.Debug, ...args); }
+  export const error = (...args: LogArgs | [error: Error]) => internalLog(LogType.Error, args[0] instanceof Error ? '%O' : args[0], ...args.slice(+!(args[0] instanceof Error)));
+  export const log = (...args: LogArgs) => internalLog(LogType.Standard, ...args);
+  export const debugLog = (...args: LogArgs) => isDebug && internalLog(LogType.Debug, ...args);
 }
 
 export default Logger;

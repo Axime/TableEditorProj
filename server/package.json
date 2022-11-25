@@ -1,13 +1,16 @@
 {
   "name": "pospelov-table-editor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "",
   "main": "./dist/index.js",
   "scripts": {
-    "build": "npx tsc"
+    "build": "cd .. && build-server.bat"
   },
   "keywords": [],
-  "author": "",
+  "author": {
+    "email": "Ivan-1.Udin@yandex.ru",
+    "name": "Ivan Yudin"
+  },
   "license": "ISC",
   "devDependencies": {
     "@types/node": "^18.11.9",
