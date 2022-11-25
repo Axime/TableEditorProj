@@ -40,6 +40,9 @@ class FileMap<T extends Record<string, any>, P extends (keyof T)[]> {
   get #mapPath() { return join(this.$pathToDir, 'map.json'); }
   #map: MapElement<T, P>[] = [];
   #load() {
+    (path => {
+      if (!existsSync(path)) mkdirSync(path);
+    })(join(process.cwd(), 'server', 'data'));
     if (!existsSync(this.$pathToDir)) mkdirSync(this.$pathToDir);
     if (!existsSync(this.#mapPath)) writeFileSync(this.#mapPath, '[]', {
       encoding: 'utf-8',
