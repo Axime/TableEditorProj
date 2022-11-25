@@ -13,14 +13,14 @@ interface RegistrationRequiredProps {
   passwordRepeat: string
   keyword: string
 }
-
+const prefix = Logger.colorString(Logger.Colors.DarkGreen, '[Registration]', true);
 RegisterRoute(new Route<RegistrationRequiredProps>(
   '/api/auth.registration',
   (req, res) => {
     try {
       Logger.debugLog(
         '%s: Запрос на регистрацию',
-        Logger.colorString(Logger.Colors.DarkGreen, '[Registration]', true),
+        prefix,
         );
       const {
         keyword, username,
@@ -34,7 +34,7 @@ RegisterRoute(new Route<RegistrationRequiredProps>(
         success: true,
       }));
     } catch (e) {
-      Logger.error(e as Error);
+      Logger.debugLog('%s: %O', prefix, e);
       res.sendResponse(e instanceof ResponseBase ? e : new FailedResponse(e as ServerError));
     }
   },

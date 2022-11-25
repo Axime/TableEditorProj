@@ -1,6 +1,6 @@
 {
   "name": "pospelov-table-editor",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "",
   "main": "./dist/index.js",
   "scripts": {
@@ -13,6 +13,7 @@
   },
   "license": "ISC",
   "devDependencies": {
+    "@types/jsonwebtoken": "^8.5.9",
     "@types/node": "^18.11.9",
     "@types/uuid": "^8.3.4",
     "typescript": "^4.9.3"

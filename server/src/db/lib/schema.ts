@@ -24,6 +24,8 @@ interface MapElement<T, P extends (keyof T)[]> {
   }
 }
 
+type Doc<T extends Record<string, any>, S extends Schema<T, (keyof T)[]>> = Document<T, S> & T;
+
 
 class FileMap<T extends Record<string, any>, P extends (keyof T)[]> {
   constructor(private $pathToDir: string, public mapPropName: P) {
@@ -103,7 +105,7 @@ export default class Schema<T extends Record<string, any>, P extends (keyof T)[]
   // Used for searching of documents
   readonly #map: FileMap<T, P>;
   readonly #cache = new Map<string, T>;
-  #readDoc(name: string): Document<T> {
+  #readDoc(name: string): Doc<T, this> {
     return new Document(
       this.#cache.has(name)
         ? this.#cache.get(name)!
@@ -117,7 +119,7 @@ export default class Schema<T extends Record<string, any>, P extends (keyof T)[]
         ) as T),
       false,
       this, name
-    );
+    ) as Doc<T, this>;
   }
 
   #writeDoc(doc: Document<T>) {
@@ -143,8 +145,8 @@ export default class Schema<T extends Record<string, any>, P extends (keyof T)[]
     return true;
   }
 
-  public create(data: T): Document<T, this> & T {
-    return new Document(data, true, this) as Document<T, this> & T;
+  public create(data: T): Doc<T, this> {
+    return new Document(data, true, this) as Doc<T, this>;
   }
 
   public delete(doc: Document<T>) {
@@ -152,7 +154,7 @@ export default class Schema<T extends Record<string, any>, P extends (keyof T)[]
     this.#deleteDoc(doc);
   }
 
-  public find(filter: Partial<T>) {
+  public find(filter: Partial<T>): Doc<T, this>[] {
     const docs = this.#map.find(filter);
     return docs.map(doc => this.#readDoc(doc))
   }
