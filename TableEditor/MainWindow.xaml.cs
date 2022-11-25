@@ -2,7 +2,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-
+using System.Windows.Navigation;
 
 namespace Main {
   public partial class MainWindow : Window {
@@ -18,7 +18,6 @@ namespace Main {
           passwordRepeat = RepeatPasswordBox.Password.Trim(),
           keyword = TextBoxKeyword.Text.ToLower().Trim(),
         });
-
     }
     void Button_Auth_Click(object sender, RoutedEventArgs e) {
       if (Check(LoginField) && Check(PasswordField)) AuthUser(new() {
