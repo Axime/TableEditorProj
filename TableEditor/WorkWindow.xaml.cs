@@ -18,6 +18,16 @@ namespace TableEditor {
       InitializeComponent();
     }
 
+    private void CreateTable(object sender, CanExecuteRoutedEventArgs e) {
 
+    }
+
+    private void OpenTable(object sender, CanExecuteRoutedEventArgs e) {
+
+    }
+
+    private void SaveTable(object sender, CanExecuteRoutedEventArgs e) {
+
+    }
   }
 }
