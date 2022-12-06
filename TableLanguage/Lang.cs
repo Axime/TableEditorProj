@@ -33,12 +33,12 @@ namespace TableLanguage {
 
       public class BinaryExpression : Node {
         public Nodes.OperatorNode op;
-        public Node lOp;
-        public Node rOp;
-        public BinaryExpression(Nodes.OperatorNode op, Node lOp, Node rOp) {
+        public Node left;
+        public Node right;
+        public BinaryExpression(Nodes.OperatorNode op, Node left, Node right) {
           this.op = op;
-          this.lOp = lOp;
-          this.rOp = rOp;
+          this.left = left;
+          this.right = right;
         }
       }
       public class UnaryExpression : Node {
@@ -52,33 +52,33 @@ namespace TableLanguage {
 
       public class IfStatement : Node {
         public Node condition;
-        public Node then;
-        public Node? @else;
-        public IfStatement(Node condition, Node then, Node? @else) {
+        public Node body;
+        public Node? elseBody;
+        public IfStatement(Node condition, Node body, Node? elseBody) {
           this.condition = condition;
-          this.then = then;
-          this.@else = @else;
+          this.body = body;
+          this.elseBody = elseBody;
         }
       }
 
       public class WhileStatement : Node {
         public Node condition;
-        public Node then;
-        public WhileStatement(Node condition, Node then) {
+        public Node body;
+        public WhileStatement(Node condition, Node body) {
           this.condition = condition;
-          this.then = then;
+          this.body = body;
         }
       }
 
       public class ForStatement : Node {
         public Node? init;
         public Node? condition;
-        public Node? interation;
-        public Node then;
-        public ForStatement(Node? init, Node? condition, Node? interation, Node then) {
+        public Node? afterIteration;
+        public Node body;
+        public ForStatement(Node? init, Node? condition, Node? afterIteration, Node body) {
           this.init = init;
-          this.interation = interation;
-          this.then = then;
+          this.afterIteration = afterIteration;
+          this.body = body;
           this.condition = condition;
         }
       }
@@ -93,7 +93,7 @@ namespace TableLanguage {
         public DeclarationStatement(Token declToken, Nodes.VariableNode var, Node? init) {
           if (declToken.flags.HasFlag(Flags.VariableDeclaration)) type = Type.variable; else type = Type.constant;
           if (type == Type.constant && init == null) {
-            throw new SyntaxError($"Missing initialer in const declaration {var.name}");
+            throw new SyntaxError($"Missing initializer in const declaration {var.name}");
           }
           varName = var.name;
           this.init = init;
@@ -128,7 +128,7 @@ namespace TableLanguage {
           this.type = type;
           text = op.text;
         }
-        public static OperatorNode? TryContruct(Token op, bool isUnary = false) {
+        public static OperatorNode? TryConstruct(Token op, bool isUnary = false) {
           if (op.flags.HasFlag(Flags.Operator)) return new(op, isUnary);
           return null;
         }
@@ -149,11 +149,11 @@ namespace TableLanguage {
             Array.Reverse(chars);
             return new string(chars);
           };
-          var _parseInt = (string num, int @base) => {
+          var _parseInt = (string num, int b) => {
             long res = 0;
             int i = 0;
             foreach (char c in _reverseString(num)) {
-              res += (c - '0') * (long)Math.Pow(@base, i);
+              res += (c - '0') * (long)Math.Pow(b, i);
               i++;
             }
             return res;
@@ -165,20 +165,20 @@ namespace TableLanguage {
           } else {
             var parts = num.Split('.');
             bool hasIntPart = false;
-            bool hasFractPart = false;
+            bool hasFractionPart = false;
             if (parts.Length == 2)
-              hasFractPart = hasIntPart = true;
+              hasFractionPart = hasIntPart = true;
             else if (num.StartsWith('.'))
-              hasFractPart = true;
+              hasFractionPart = true;
             else hasIntPart = true;
             if (hasIntPart) {
               string rawIntPart = parts[0];
               v += _parseInt(rawIntPart, 10);
             }
-            if (hasFractPart) {
+            if (hasFractionPart) {
               int i = 1;
-              string rawFractPart = hasIntPart ? parts[1] : parts[0];
-              foreach (char c in rawFractPart) {
+              string rawFractionPart = hasIntPart ? parts[1] : parts[0];
+              foreach (char c in rawFractionPart) {
                 v += (c - '0') * Math.Pow(10, -i);
                 i++;
               }
@@ -202,7 +202,7 @@ namespace TableLanguage {
         ) => (token != null && token.type.name == name ? (t = token, true) : (t = null, false)).Item2;
         /*
          * All methods set pos to the next token
-         * 
+         *
          */
         public List<Node> Parse() {
           while (pos < tokens.Count) {
@@ -227,7 +227,7 @@ namespace TableLanguage {
           var declToken = CurrentToken;
           if (!declToken!.type.flags.HasFlag(Flags.Declaration)) throw new Exception("Invalid DeclarationStatement");
           MoveToNextToken();// var_name
-          if (!TokenIs(CurrentToken, TokenNames.Identifier, out var variableName)) throw new SyntaxError("Expectied indentifier", CurrentToken?.pos);
+          if (!TokenIs(CurrentToken, TokenNames.Identifier, out var variableName)) throw new SyntaxError("Expected identifier", CurrentToken?.pos);
           MoveToNextToken(); // semicolon or assignment
           Node? init = null;
           if (TokenIs(CurrentToken, TokenNames.Assignment_operator, out var _)) {
@@ -240,10 +240,10 @@ namespace TableLanguage {
           return new(declToken, new Nodes.VariableNode(variableName!.text), init);
         }
         private Node ParseExpression() => __parseExpr(ParsePrimary(), 0);
-        private Node __parseExpr(Node lhs, int min_predence) {
+        private Node __parseExpr(Node lhs, int minPrecedence) {
           if (CurrentToken!.flags.HasFlag(Flags.Operator)) {
-            Nodes.OperatorNode? lookahead = Nodes.OperatorNode.TryContruct(CurrentToken);
-            while (lookahead != null && lookahead.type >= min_predence) {
+            Nodes.OperatorNode? lookahead = Nodes.OperatorNode.TryConstruct(CurrentToken);
+            while (lookahead != null && lookahead.type >= minPrecedence) {
               MoveToNextToken();
               var op = lookahead;
               var rhs = ParsePrimary();
@@ -256,7 +256,7 @@ namespace TableLanguage {
                   lookahead.type == OperatorDirection.RightToLeft && (int)lookahead.type == op.type)
                   ) {
                   rhs = __parseExpr(rhs, op.type + ((lookahead.type > op.type) ? 1 : 0));
-                  lookahead = Nodes.OperatorNode.TryContruct(CurrentToken);
+                  lookahead = Nodes.OperatorNode.TryConstruct(CurrentToken);
                 }
               } else lookahead = null;
               lhs = new Statements.BinaryExpression(op, lhs, rhs);
@@ -267,7 +267,7 @@ namespace TableLanguage {
         private Node ParsePrimary() {
           if (TokenIs(CurrentToken, TokenNames.OpRndBracket, out var _)) {
             // If current token is left opening par (
-            // Parsing expression in parenthesis
+            // Parsing expression in Bracket
             MoveToNextToken();
             var expr = ParseExpression();
             if (!TokenIs(CurrentToken, TokenNames.ClRndBracket, out var _)) throw new SyntaxError("Expected )", CurrentToken?.pos);
@@ -324,12 +324,12 @@ namespace TableLanguage {
       VariableDeclaration = 512,
       ConstantDeclaration = 1024,
       Declaration = 2048,
-      Parenthesis = 4096,
-      OpeningParenthesis = 8192,
-      ClosingParenthesis = 16384,
-      CirlceParenthesis = 32768,
-      SquareParenthesis = 65536,
-      CurlyureParenthesis = 131072,
+      Bracket = 4096,
+      OpeningBracket = 8192,
+      ClosingBracket = 16384,
+      RoundBracket = 32768,
+      SquareBracket = 65536,
+      CurlyBracket = 131072,
     }
 #if DEBUG
     public
@@ -469,12 +469,12 @@ namespace TableLanguage {
         TokenType.ToDictItem(TokenNames.StringLiteral, "^\".*?\"|^'.*?'", Flags.StringLiteral | Flags.Literal),
         TokenType.ToDictItem(TokenNames.VariableDeclaration, "^let", Flags.Declaration | Flags.VariableDeclaration | Flags.Keyword),
         TokenType.ToDictItem(TokenNames.ConstantDeclaration, "^const", Flags.Declaration | Flags.ConstantDeclaration | Flags.Keyword),
-        TokenType.ToDictItem(TokenNames.OpRndBracket, @"^\(", Flags.OpeningParenthesis | Flags.CirlceParenthesis | Flags.Parenthesis),
-        TokenType.ToDictItem(TokenNames.ClRndBracket, @"^\)", Flags.ClosingParenthesis | Flags.CirlceParenthesis | Flags.Parenthesis),
-        TokenType.ToDictItem(TokenNames.OpSqBracket, @"^\[", Flags.OpeningParenthesis | Flags.SquareParenthesis | Flags.Parenthesis),
-        TokenType.ToDictItem(TokenNames.ClSqBracket, @"^\]", Flags.ClosingParenthesis | Flags.SquareParenthesis | Flags.Parenthesis),
-        TokenType.ToDictItem(TokenNames.OpCurlyBracket, @"^\{", Flags.OpeningParenthesis | Flags.CurlyureParenthesis | Flags.Parenthesis),
-        TokenType.ToDictItem(TokenNames.ClCurlyBracket, @"^\}", Flags.ClosingParenthesis | Flags.CurlyureParenthesis | Flags.Parenthesis),
+        TokenType.ToDictItem(TokenNames.OpRndBracket, @"^\(", Flags.OpeningBracket | Flags.RoundBracket | Flags.Bracket),
+        TokenType.ToDictItem(TokenNames.ClRndBracket, @"^\)", Flags.ClosingBracket | Flags.RoundBracket | Flags.Bracket),
+        TokenType.ToDictItem(TokenNames.OpSqBracket, @"^\[", Flags.OpeningBracket | Flags.SquareBracket | Flags.Bracket),
+        TokenType.ToDictItem(TokenNames.ClSqBracket, @"^\]", Flags.ClosingBracket | Flags.SquareBracket | Flags.Bracket),
+        TokenType.ToDictItem(TokenNames.OpCurlyBracket, @"^\{", Flags.OpeningBracket | Flags.CurlyBracket | Flags.Bracket),
+        TokenType.ToDictItem(TokenNames.ClCurlyBracket, @"^\}", Flags.ClosingBracket | Flags.CurlyBracket | Flags.Bracket),
         TokenType.ToDictItem(TokenNames.Function, "^function", Flags.Keyword),
         TokenType.ToDictItem(TokenNames.If, "^if", Flags.Keyword),
         TokenType.ToDictItem(TokenNames.Else, "else", Flags.Keyword),
