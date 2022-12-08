@@ -1,9 +1,15 @@
-﻿using System;
+﻿#if DEBUG
+using System;
 
 namespace TableLanguage {
   internal class Test {
     public static void Main(string[] args) {
-      string c = "let i = .45; const a = 1 + i *= 2;";
+      string c =
+      "let i = .45; const a = {" +
+        "[key + 1 * 2] = {" +
+          "innerKey=1;" +
+        "};" +
+      "};";
       var a = Lang.LexicalAnalysis(c);
       Console.WriteLine(c);
       foreach (var t in a) {
@@ -16,3 +22,4 @@ namespace TableLanguage {
     }
   }
 }
+#endif

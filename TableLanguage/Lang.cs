@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Net.WebSockets;
 #if DEBUG
 using T = System.Collections.Generic.List<TableLanguage.Lang.Token>;
 using N = System.Collections.Generic.List<TableLanguage.Lang.Node>;
@@ -186,12 +187,34 @@ namespace TableLanguage {
           }
         }
       }
+
+      public class StringNode : Node {
+        public string str;
+        public StringNode(string str) {
+          this.str = str;
+        }
+      }
+      public class ObjectNode : Node {
+        public Dictionary<Node, Node> props;
+        public ObjectNode(Dictionary<Node, Node> props) {
+          this.props = props;
+        }
+      }
+      public class ArrayNode : Node {
+
+      }
     }
     private static class Parser {
       private class _Parser {
         private int pos = 0;
         private List<Token> tokens;
         private readonly List<Node> nodes = new();
+        private void MoveToNextToken() => pos++;
+        private Token? NextToken => tokens.Count - 1 > pos ? tokens[pos + 1] : null;
+        private Token? CurrentToken => tokens.Count > pos ? tokens[pos] : null;
+        private Token? PreviousToken => tokens.Count + 1 > pos ? tokens[pos - 1] : null;
+        private bool CurrentTokenIs(string name, out Token? t) => TokenIs(CurrentToken, name, out t);
+        private bool CurrentTokenIs(string name) => CurrentTokenIs(name, out var _);
         public _Parser(List<Token> tokens) {
           this.tokens = tokens;
         }
@@ -204,38 +227,48 @@ namespace TableLanguage {
          * All methods set pos to the next token
          *
          */
-        public List<Node> Parse() {
-          while (pos < tokens.Count) {
-            var t = tokens[pos];
+        public List<Node> Parse(int count = int.MaxValue, string? WhileToken = null) {
+          var localNodes = new List<Node>();
+          var Add = (Node n) => {
+            nodes.Add(n);
+            localNodes.Add(n);
+          };
+          while (nodes.Count < count && pos < tokens.Count) {
+            var t = CurrentToken!;
             var tokenType = t.type;
             var tokenFlags = tokenType.flags;
             var tokenName = tokenType.name;
+            if (WhileToken != null && WhileToken == tokenName) {
+              MoveToNextToken();
+              break;
+            };
             if (tokenFlags.HasFlag(Flags.Declaration)) {
-              nodes.Add(ParseDeclaration());
+              Add(ParseDeclaration());
               continue;
             }
+            if (tokenName == TokenNames.OpCurlyBracket) {
+
+            }
           }
+          if (WhileToken != null) return localNodes;
           return nodes;
         }
-        private void MoveToNextToken() => pos++;
-        private Token? NextToken => tokens.Count - 1 > pos ? tokens[pos + 1] : null;
-        private Token? CurrentToken => tokens.Count > pos ? tokens[pos] : null;
-        private Token? PreviousToken => tokens.Count + 1 > pos ? tokens[pos - 1] : null;
+
         private Statements.DeclarationStatement ParseDeclaration() {
-          // let <var_name> [= expr];
-          // const <const_name> [= expr];
+          // let <identifier> [= expr];
+          // const <identifier> [= expr];
           var declToken = CurrentToken;
           if (!declToken!.type.flags.HasFlag(Flags.Declaration)) throw new Exception("Invalid DeclarationStatement");
           MoveToNextToken();// var_name
-          if (!TokenIs(CurrentToken, TokenNames.Identifier, out var variableName)) throw new SyntaxError("Expected identifier", CurrentToken?.pos);
+          if (!CurrentTokenIs(TokenNames.Identifier, out var variableName)) throw new SyntaxError("Expected identifier", CurrentToken?.pos);
           MoveToNextToken(); // semicolon or assignment
           Node? init = null;
-          if (TokenIs(CurrentToken, TokenNames.Assignment_operator, out var _)) {
+          if (CurrentTokenIs(TokenNames.Assignment_operator, out var _)) {
             // assignment
             MoveToNextToken();
             init = ParseExpression(); // parsing initializer
           }
-          if (!TokenIs(CurrentToken, TokenNames.Semicolon, out var _)) throw new SyntaxError("Expected semicolon", CurrentToken?.pos);
+          if (!CurrentTokenIs(TokenNames.Semicolon, out var _)) throw new SyntaxError("Expected semicolon", CurrentToken?.pos);
           MoveToNextToken();
           return new(declToken, new Nodes.VariableNode(variableName!.text), init);
         }
@@ -264,13 +297,47 @@ namespace TableLanguage {
           }
           return lhs;
         }
+        private Nodes.ObjectNode ParseObject() {
+          // Object
+          // {
+          //   ( [expr] = expr; )*
+          //   ( name = expr; )*
+          // }
+          if (!CurrentTokenIs(TokenNames.OpCurlyBracket)) throw new SyntaxError("Expected {", CurrentToken?.pos);
+          MoveToNextToken();
+          Dictionary<Node, Node> keysAndValues = new();
+          while (!CurrentTokenIs(TokenNames.ClCurlyBracket)) {
+            Node key;
+            if (CurrentTokenIs(TokenNames.OpSqBracket)) {
+              MoveToNextToken();
+              key = ParseExpression();
+              if (!CurrentTokenIs(TokenNames.ClSqBracket)) throw new SyntaxError("Expected ]", CurrentToken?.pos);
+              MoveToNextToken();
+            } else {
+              key = ParsePrimary();
+              if (key is not Nodes.StringNode && key is not Nodes.VariableNode) throw new SyntaxError("Expected property name");
+            }
+            if (!CurrentTokenIs(TokenNames.Assignment_operator)) throw new SyntaxError("Expected =", CurrentToken?.pos);
+            MoveToNextToken();
+            var value = ParseExpression();
+            if (!CurrentTokenIs(TokenNames.Semicolon)) throw new SyntaxError("Expected ;", CurrentToken?.pos);
+            MoveToNextToken();
+            keysAndValues.Add(key, value);
+          }
+          MoveToNextToken();
+          return new Nodes.ObjectNode(keysAndValues);
+
+        }
         private Node ParsePrimary() {
-          if (TokenIs(CurrentToken, TokenNames.OpRndBracket, out var _)) {
+          if (CurrentTokenIs(TokenNames.OpCurlyBracket)) {
+            return ParseObject();
+          }
+          if (CurrentTokenIs(TokenNames.OpRndBracket)) {
             // If current token is left opening par (
             // Parsing expression in Bracket
             MoveToNextToken();
             var expr = ParseExpression();
-            if (!TokenIs(CurrentToken, TokenNames.ClRndBracket, out var _)) throw new SyntaxError("Expected )", CurrentToken?.pos);
+            if (!CurrentTokenIs(TokenNames.ClRndBracket)) throw new SyntaxError("Expected )", CurrentToken?.pos);
             MoveToNextToken();
             return expr;
           }
@@ -282,7 +349,9 @@ namespace TableLanguage {
           if (TokenIs(PreviousToken, TokenNames.Subtract_operator, out var unaryMinus)) return returnUnary(unaryMinus!);
           if (TokenIs(PreviousToken, TokenNames.NumberLiteral, out var num)) return new Nodes.NumberNode(num!.text);
           if (TokenIs(PreviousToken, TokenNames.Identifier, out var var)) return new Nodes.VariableNode(var!.text);
-          throw new SyntaxError($"Unexpected token: {PreviousToken!.text}", PreviousToken?.pos);
+          if (TokenIs(PreviousToken, TokenNames.StringLiteral, out var str)) return new Nodes.StringNode(str!.text);
+          throw
+            new SyntaxError($"Unexpected token: {PreviousToken!.text}", PreviousToken?.pos);
         }
       }
       public static List<Node> Parse(List<Token> tokens) {
