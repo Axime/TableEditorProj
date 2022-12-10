@@ -5,11 +5,11 @@ namespace TableLanguage {
   internal class Test {
     public static void Main(string[] args) {
       string c =
-      "let i = .45; const a = {" +
-        "[key + 1 * 2] = {" +
-          "innerKey=1;" +
-        "};" +
-      "};";
+      "let i = .45;" +
+      "const a = {" +
+        "[key + 1 * 2] = [1; ; 3]" +
+      "};" +
+      "const truea = 4 || !false & true;";
       var a = Lang.LexicalAnalysis(c);
       Console.WriteLine(c);
       foreach (var t in a) {
