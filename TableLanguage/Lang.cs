@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Net.WebSockets;
-using System.Diagnostics;
+using System.Linq;
 #if DEBUG
 using T = System.Collections.Generic.List<TableLanguage.Lang.Token>;
 using N = System.Collections.Generic.List<TableLanguage.Lang.Node>;
@@ -52,6 +51,9 @@ namespace TableLanguage {
         }
       }
 
+      public class MemberAccessStatement : BinaryExpression {
+        public MemberAccessStatement(Nodes.OperatorNode op, Node left, Node right) : base(op, left, right) { }
+      }
       public class IfStatement : Node {
         public Node condition;
         public Node body;
@@ -115,6 +117,14 @@ namespace TableLanguage {
         public DoWhileStatement(Node condition, Node body) {
           this.body = body;
           this.condition = condition;
+        }
+      }
+      public class FunctionCall : Node {
+        public List<Node> args;
+        public Node callee;
+        public FunctionCall(List<Node> args, Node callee) {
+          this.args = args;
+          this.callee = callee;
         }
       }
     }
@@ -217,7 +227,7 @@ namespace TableLanguage {
     private static class Parser {
       private class _Parser {
         private int pos = 0;
-        private List<Token> tokens;
+        private readonly List<Token> tokens;
         private readonly List<Node> nodes = new();
         private void MoveToNextToken() => pos++;
         private Token? NextToken => tokens.Count - 1 > pos ? tokens[pos + 1] : null;
@@ -281,11 +291,34 @@ namespace TableLanguage {
           MoveToNextToken();
           return new(declToken, new Nodes.VariableNode(variableName!.text), init);
         }
+        private Statements.FunctionCall ParseFunctionCall(Node callee) {
+          if (CurrentToken != TokenNames.OpRndBracket) throw new SyntaxError("Expected (", CurrentToken?.pos);
+          MoveToNextToken();
+          List<Node> args = new();
+          while (CurrentToken != TokenNames.ClRndBracket) {
+            args.Add(ParseExpression());
+            if (CurrentToken != TokenNames.ClRndBracket && CurrentToken != TokenNames.Semicolon) throw new SyntaxError("Expected ; or )");
+            if (CurrentToken == TokenNames.Semicolon) MoveToNextToken();
+          }
+          MoveToNextToken();
+          return new(args, callee);
+        }
         private Node ParseExpression() => ParseBinaryOperators(ParsePrimary(), 0);
         private Node ParseBinaryOperators(Node lhs, int minPrecedence) {
+          start:
           if (CurrentToken!.flags.HasFlag(Flags.Operator)) {
             Nodes.OperatorNode? lookahead = Nodes.OperatorNode.TryConstruct(CurrentToken);
             while (lookahead != null && lookahead.type >= minPrecedence) {
+              if (CurrentToken == TokenNames.OpRndBracket) {
+                var a = (ref Node n) => { return; };
+                a = (ref Node n) => {
+                  if (n.Name == "BinaryExpression" && ((Statements.BinaryExpression)n).op.type < Operators[TokenNames.OpRndBracket])
+                    a(ref ((Statements.BinaryExpression)n).right);
+                  else n = ParseFunctionCall(n);
+                };
+                a(ref lhs);
+                goto start;
+              }
               MoveToNextToken();
               var op = lookahead;
               var rhs = ParsePrimary();
@@ -301,7 +334,8 @@ namespace TableLanguage {
                   lookahead = Nodes.OperatorNode.TryConstruct(CurrentToken);
                 }
               } else lookahead = null;
-              lhs = new Statements.BinaryExpression(op, lhs, rhs);
+              if (op.text == ".") lhs = new Statements.MemberAccessStatement(op, lhs, rhs);
+              else lhs = new Statements.BinaryExpression(op, lhs, rhs);
             }
           }
           return lhs;
@@ -410,7 +444,6 @@ namespace TableLanguage {
       }
       public static bool operator ==(Token? t, string name) => t?.type.name == name;
       public static bool operator !=(Token? t, string name) => t?.type.name != name;
-
     }
     [Flags]
 #if DEBUG
@@ -510,7 +543,9 @@ namespace TableLanguage {
       [$"{TokenNames.Subtract_operator}_unary"] = new(19, OperatorDirection.NonBinary), // -expr
       [TokenNames.LogicNot_operator] = new(19, OperatorDirection.NonBinary), // !expr
       [TokenNames.BitwiseNot_operator] = new(19, OperatorDirection.NonBinary), // ~expr
-      [TokenNames.Dot_operator] = 20, // variable.member
+      [TokenNames.OpRndBracket] = 20,
+      [TokenNames.OpSqBracket] = 20,
+      [TokenNames.Dot_operator] = 21, // variable.member
     };
     private static class TokenNames {
       public static readonly string Space = "space";
@@ -547,8 +582,8 @@ namespace TableLanguage {
       public static readonly string Comma_operator = "comma_operator";
       public static readonly string Break = "break_keyword";
       public static readonly string Continue = "continue_keyword";
-      public static readonly string Eq_operator = "equals_operator";
       public static readonly string StrictEq_operator = "strict_equals_operator";
+      public static readonly string Eq_operator = "equals_operator";
       public static readonly string NotEq_operator = "not_equals_operator";
       public static readonly string StrictNotEq_operator = "strict_not_equals_operator";
       public static readonly string Greater_operator = "greater_operator";
@@ -568,6 +603,8 @@ namespace TableLanguage {
       public static readonly string FalseLiteral = "false_literal";
       public static readonly string NullLiteral = "null_literal";
       public static readonly string Identifier = "identifier";
+
+      public static readonly string FunctionCall_operator = "function_call_operator";
     }
     private static class Lexer {
       private static readonly Dictionary<string, TokenType> Tokens = new(new List<KeyValuePair<string, TokenType>>() {
@@ -593,9 +630,9 @@ namespace TableLanguage {
         TokenType.ToDictItem(TokenNames.StringLiteral, "^\".*?\"|^'.*?'", Flags.StringLiteral | Flags.Literal),
         TokenType.ToDictItem(TokenNames.VariableDeclaration, "^let", Flags.Declaration | Flags.VariableDeclaration | Flags.Keyword),
         TokenType.ToDictItem(TokenNames.ConstantDeclaration, "^const", Flags.Declaration | Flags.ConstantDeclaration | Flags.Keyword),
-        TokenType.ToDictItem(TokenNames.OpRndBracket, @"^\(", Flags.OpeningBracket | Flags.RoundBracket | Flags.Bracket),
+        TokenType.ToDictItem(TokenNames.OpRndBracket, @"^\(", Flags.OpeningBracket | Flags.RoundBracket | Flags.Bracket | Flags.Operator),
         TokenType.ToDictItem(TokenNames.ClRndBracket, @"^\)", Flags.ClosingBracket | Flags.RoundBracket | Flags.Bracket),
-        TokenType.ToDictItem(TokenNames.OpSqBracket, @"^\[", Flags.OpeningBracket | Flags.SquareBracket | Flags.Bracket),
+        TokenType.ToDictItem(TokenNames.OpSqBracket, @"^\[", Flags.OpeningBracket | Flags.SquareBracket | Flags.Bracket| Flags.Operator),
         TokenType.ToDictItem(TokenNames.ClSqBracket, @"^\]", Flags.ClosingBracket | Flags.SquareBracket | Flags.Bracket),
         TokenType.ToDictItem(TokenNames.OpCurlyBracket, @"^\{", Flags.OpeningBracket | Flags.CurlyBracket | Flags.Bracket),
         TokenType.ToDictItem(TokenNames.ClCurlyBracket, @"^\}", Flags.ClosingBracket | Flags.CurlyBracket | Flags.Bracket),
@@ -660,6 +697,68 @@ namespace TableLanguage {
 #if DEBUG
     public static N Parse(T tokens) => Parser.Parse(tokens);
     public static T LexicalAnalysis(string input) => Lexer.Analysis(input);
+    public static void PrintNode(Node node, int indent = 0) {
+      if (indent != 0) Console.Write(string.Join("", Enumerable.Repeat(" ", indent)));
+      var w = (object p) => Console.Write(p);
+      switch (node.Name) {
+        case "NumberNode":
+          w(((Nodes.NumberNode)node).v);
+          break;
+        case "VariableNode":
+          w(((Nodes.VariableNode)node).name);
+          break;
+        case "UnaryExpression": {
+            Statements.UnaryExpression expr = (Statements.UnaryExpression)node;
+            w(expr.op.text);
+            w("(");
+            PrintNode(expr.operand);
+            w(")");
+            break;
+          }
+        case "MemberAccessStatement":
+        case "BinaryExpression": {
+            Statements.BinaryExpression expr = (Statements.BinaryExpression)node;
+            w("(");
+            PrintNode(expr.left);
+            if (node.Name == "MemberAccessStatement") w(")");
+            else w(") ");
+            w(expr.op.text);
+            if (node.Name == "MemberAccessStatement") w("(");
+            else w(" (");
+            PrintNode(expr.right);
+            w(")");
+            break;
+          }
+        case "DeclarationStatement":
+          Statements.DeclarationStatement d = (Statements.DeclarationStatement)node;
+          if (d.type == Statements.DeclarationStatement.Type.variable) w("let ");
+          else w("const ");
+          w(d.varName);
+          if (d.init != null) {
+            w(" = ");
+            PrintNode(d.init);
+          }
+          w(";");
+          break;
+
+        case "FunctionCall":
+          Statements.FunctionCall c = (Statements.FunctionCall)node;
+          w("(");
+          PrintNode(c.callee);
+          w(")");
+          w("(");
+          for (int i = 0; i < c.args.Count; i++) {
+            var arg = c.args[i];
+            PrintNode(arg);
+            if (i + 1 != c.args.Count) w("; ");
+          }
+          w(")");
+          break;
+        case "BooleanNode":
+          w(((Nodes.BooleanNode)node).value); break;
+      }
+    }
+
 #endif
   }
 }
