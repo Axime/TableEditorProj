@@ -5,9 +5,11 @@ namespace TableLanguage {
   internal class Test {
     public static void Main() {
       string c =
-      "let i = (!false) + (Array.isArray)(a()(5); 4);" +
-      ""
-      ;
+      "const numbers = [[1, 2, 3], 2, 3, 4][1];\n" +
+      //"let a = 5 + !!5;" +
+      "let i = !!!number.slice((1,1), 3, 5 + 5) + a['filter'](isEven) + !!!!5;\n" +
+      //"function n(arg,arg2) {}" +
+      "";
       var a = Lang.LexicalAnalysis(c);
       Console.WriteLine(c);
       //foreach (var t in a) {
@@ -15,9 +17,10 @@ namespace TableLanguage {
       //}
       var b = Lang.Parse(a);
       //Console.WriteLine($"\t\t{((Lang.Nodes.NumberNode)((Lang.Statements.DeclarationStatement)b[0]).init!).v}");
-      Lang.PrintNode(b[0]);
-      //Console.WriteLine(b);
-
+      foreach (var node in b) {
+        Console.WriteLine();
+        Lang.PrintNode(node);
+      }
     }
   }
 }
