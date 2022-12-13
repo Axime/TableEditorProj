@@ -12,7 +12,8 @@ namespace TableLanguage {
   public static class Lang {
     public class SyntaxError : Exception {
       public int? pos;
-      public SyntaxError(string msg, int? pos = null) : base(msg) {
+      public SyntaxError(string msg, int? pos = null) :
+        base($"{msg}{(pos != null ? $" at position {pos}" : "")}") {
         this.pos = pos;
       }
     }
@@ -68,8 +69,8 @@ namespace TableLanguage {
 
       public class WhileStatement : Node {
         public Node condition;
-        public Node body;
-        public WhileStatement(Node condition, Node body) {
+        public Node? body;
+        public WhileStatement(Node condition, Node? body) {
           this.condition = condition;
           this.body = body;
         }
@@ -79,8 +80,8 @@ namespace TableLanguage {
         public Node? init;
         public Node? condition;
         public Node? afterIteration;
-        public Node body;
-        public ForStatement(Node? init, Node? condition, Node? afterIteration, Node body) {
+        public Node? body;
+        public ForStatement(Node? init, Node? condition, Node? afterIteration, Node? body) {
           this.init = init;
           this.afterIteration = afterIteration;
           this.body = body;
@@ -122,11 +123,13 @@ namespace TableLanguage {
       }
       public class FunctionDeclarationStatement : Node {
         public List<Node> body;
-        public string name;
+        public string? name;
         public List<Nodes.VariableNode> args;
-        public FunctionDeclarationStatement(List<Node> body, string name, List<Nodes.VariableNode> args) {
+        public bool anonymous;
+        public FunctionDeclarationStatement(List<Node> body, string? name, List<Nodes.VariableNode> args) {
           this.body = body;
           this.name = name;
+          anonymous = name == null;
           this.args = args;
         }
       }
@@ -250,6 +253,20 @@ namespace TableLanguage {
         public _Parser(List<Token> tokens) {
           this.tokens = tokens;
         }
+        private static void ThrowSyntaxError(string msg, int? pos) => throw new SyntaxError(msg, pos);
+        private static void ThrowExpected(
+          string msg,
+          int? pos,
+          bool q = true // use quotes around msg
+        ) => ThrowSyntaxError($"Expected {(q ? "\"" : "")}{msg}{(q ? "\"" : "")}", pos);
+        private void ThrowExpected(
+          string msg,
+          bool q = true
+        ) => ThrowSyntaxError($"Expected {(q ? "\"" : "")}{msg}{(q ? "\"" : "")}", CurrentToken?.pos);
+        private void Expect(string token, bool inv, string throwMsg, int? throwPos, bool q = true) {
+          if (inv && CurrentToken == token || !inv && CurrentToken != token) ThrowExpected(throwMsg, throwPos, q);
+        }
+        private void Expect(string token, bool inv, string throwMsg, bool q = true) => Expect(token, inv, throwMsg, CurrentToken?.pos, q);
         static bool TokenIs(
           Token? token,
           string name,
@@ -262,10 +279,10 @@ namespace TableLanguage {
         public List<Node> Parse(int count = int.MaxValue, string? WhileToken = null) {
           var localNodes = new List<Node>();
           var Add = (Node n) => {
-            if (WhileToken == null) nodes.Add(n);
+            if (WhileToken == null && count == int.MaxValue) nodes.Add(n);
             else localNodes.Add(n);
           };
-          while (nodes.Count < count && pos < tokens.Count) {
+          while (localNodes.Count < count && pos < tokens.Count) {
             var t = CurrentToken!;
             var tokenFlags = t.flags;
             if (WhileToken != null && t == WhileToken) {
@@ -281,11 +298,102 @@ namespace TableLanguage {
               continue;
             }
             if (t == TokenNames.OpCurlyBracket) {
-
+              Add(ParseBlock());
+              continue;
             }
+            if (t == TokenNames.If) {
+              Add(ParseIf());
+              continue;
+            }
+            if (t == TokenNames.Else) {
+              ThrowSyntaxError("Unexpected \"else\"", t.pos);
+            }
+            if (t == TokenNames.While) {
+              Add(ParseWhile());
+              continue;
+            }
+            if (t == TokenNames.Do) {
+              Add(ParseDoWhile());
+              continue;
+            }
+            if (t == TokenNames.For) {
+              Add(ParseFor());
+              continue;
+            }
+            Add(ParseExpression());
+            Expect(TokenNames.Semicolon, false, ";");
+            MoveToNextToken();
           }
-          if (WhileToken != null) return localNodes;
+          if (WhileToken != null || count != int.MaxValue) return localNodes;
           return nodes;
+        }
+        private Statements.ForStatement ParseFor() {
+          Expect(TokenNames.For, false, "for");
+          MoveToNextToken();
+          Expect(TokenNames.OpRndBracket, false, "(");
+          MoveToNextToken();
+          var init = Parse(1)[0];
+          if (init.Name == "DeclarationStatement") pos--;
+          Expect(TokenNames.Semicolon, false, ";");
+          MoveToNextToken();
+          var condition = ParseExpression();
+          Expect(TokenNames.Semicolon, false, ";");
+          MoveToNextToken();
+          var afterIteration = ParseExpression();
+          Expect(TokenNames.ClRndBracket, false, ")");
+          MoveToNextToken();
+          if (CurrentToken == TokenNames.Semicolon) return new(init, condition, afterIteration, null);
+          var body = Parse(1)[0];
+          return new(init, condition, afterIteration, body);
+        }
+        private Statements.DoWhileStatement ParseDoWhile() {
+          Expect(TokenNames.Do, false, "do");
+          MoveToNextToken();
+          var body = Parse(1)[0];
+          Expect(TokenNames.While, false, "while");
+          MoveToNextToken();
+          Expect(TokenNames.OpRndBracket, false, "(");
+          MoveToNextToken();
+          Expect(TokenNames.ClRndBracket, true, "expression", false);
+          var condition = ParseExpression();
+          Expect(TokenNames.ClRndBracket, false, ")");
+          MoveToNextToken();
+          Expect(TokenNames.Semicolon, false, ";");
+          MoveToNextToken();
+          return new(condition, body);
+        }
+        private Statements.WhileStatement ParseWhile() {
+          Expect(TokenNames.While, false, "while");
+          MoveToNextToken();
+          Expect(TokenNames.OpRndBracket, false, "(");
+          MoveToNextToken();
+          Expect(TokenNames.ClRndBracket, true, "expression", false);
+          var condition = ParseExpression();
+          Expect(TokenNames.ClRndBracket, false, ")");
+          MoveToNextToken();
+          if (CurrentToken == TokenNames.Semicolon) {
+            MoveToNextToken();
+            return new(condition, null);
+          }
+          return new(condition, Parse(1)[0]);
+        }
+        private Statements.IfStatement ParseIf() {
+          // if (expr) statement [else statement]
+          // statement can be block, so
+          // if (expr) { statements; } [else statement]
+          Expect(TokenNames.If, false, "if");
+          MoveToNextToken();
+          Expect(TokenNames.OpRndBracket, false, "(");
+          MoveToNextToken();
+          Expect(TokenNames.ClRndBracket, true, "expression", PreviousToken?.pos, false);
+          var condition = ParseExpression();
+          Expect(TokenNames.ClRndBracket, false, ")");
+          MoveToNextToken();
+          var body = Parse(1)[0];
+          if (CurrentToken != TokenNames.Else) return new(condition, body, null);
+          MoveToNextToken();
+          var ElseBody = Parse(1)[0];
+          return new(condition, body, ElseBody);
         }
         private List<Node> ParseCommas(string stopToken) {
           List<int> commaPositions = new();
@@ -312,10 +420,11 @@ namespace TableLanguage {
           MoveToNextToken(); // Current position on stopToken, move it to next
           List<Node> nodes = new();
           if (commaPositions.Count == 0) {
-            nodes.Add(n);
+            if (n != null)
+              nodes.Add(n);
             return nodes;
           }
-          Node expr = (Statements.BinaryExpression)n;
+          Node expr = n;
           while (true) {
             if (expr.Name != "BinaryExpression") {
               nodes.Add(expr);
@@ -332,13 +441,17 @@ namespace TableLanguage {
           nodes.Reverse();
           return nodes;
         }
+        private Statements.Block ParseBlock() {
+          MoveToNextToken();
+          return new(Parse(int.MaxValue, TokenNames.ClCurlyBracket));
+        }
         private Statements.DeclarationStatement ParseDeclaration() {
           // let <identifier> [= expr];
-          // const <identifier> [= expr];
+          // const <identifier> = expr;
           var declToken = CurrentToken;
-          if (!declToken!.type.flags.HasFlag(Flags.Declaration)) throw new Exception("Invalid DeclarationStatement");
+          if (!declToken!.type.flags.HasFlag(Flags.Declaration)) ThrowExpected("\"let\" or \"const\"", false);
           MoveToNextToken();// var_name
-          if (!CurrentTokenIs(TokenNames.Identifier, out var variableName)) throw new SyntaxError("Expected identifier", CurrentToken?.pos);
+          if (!CurrentTokenIs(TokenNames.Identifier, out var variableName)) ThrowExpected("identifier", false);
           MoveToNextToken(); // semicolon or assignment
           Node? init = null;
           if (CurrentToken == TokenNames.Assignment_operator) {
@@ -346,76 +459,56 @@ namespace TableLanguage {
             MoveToNextToken();
             init = ParseExpression(); // parsing initializer
           }
-          if (CurrentToken != TokenNames.Semicolon) throw new SyntaxError("Expected semicolon", CurrentToken?.pos);
+          Expect(TokenNames.Semicolon, false, ";");
           MoveToNextToken();
           return new(declToken, new Nodes.VariableNode(variableName!.text), init);
         }
         private Statements.FunctionCall ParseFunctionCall(Node callee) {
-          if (CurrentToken != TokenNames.OpRndBracket) throw new SyntaxError("Expected (", CurrentToken?.pos);
+          Expect(TokenNames.OpRndBracket, false, "(");
           MoveToNextToken();
           var args = ParseCommas(TokenNames.ClRndBracket);
-          //while (CurrentToken != TokenNames.ClRndBracket) {
-          //  args.Add(ParseExpression());
-          //  if (CurrentToken != TokenNames.ClRndBracket && CurrentToken != TokenNames.Semicolon)
-          //    throw new SyntaxError("Expected , or )", CurrentToken?.pos);
-          //  if (CurrentToken == TokenNames.Semicolon) MoveToNextToken();
-          //}
-          //var a = ParseExpression();
-          //while (a.Name == "BinaryExpression") {
-          //  Statements.BinaryExpression expr = (Statements.BinaryExpression)a;
-          //  if (expr.op.text != ",") break;
-          //  var left = expr.left;
-          //  args.Add(expr.right);
-          //  if (left.Name != "BinaryExpression") {
-          //    args.Add(left); break;
-          //  }
-          //  a = left;
-          //}
-          //if (CurrentToken != TokenNames.ClRndBracket) throw new SyntaxError("Expected , or )", CurrentToken?.pos);
-          //MoveToNextToken();
-          //args.Reverse();
           return new(args, callee);
         }
-        private Statements.FunctionDeclarationStatement ParseFunctionDeclaration() {
+        private Statements.FunctionDeclarationStatement ParseFunctionDeclaration(bool isExpr = false) {
           // function <function-name>(arg1, arg2, arg_i) {
           //  [statements;]
           // }
-          if (CurrentToken != TokenNames.Function) throw new SyntaxError("Expected \"function\"");
+          Expect(TokenNames.Function, false, "function");
           MoveToNextToken();
-          if (!CurrentTokenIs(TokenNames.Identifier, out var name)) throw new SyntaxError("Expected function name", CurrentToken?.pos);
-          MoveToNextToken();
-          if (CurrentToken != TokenNames.OpRndBracket) throw new SyntaxError("Expected \"(\"", CurrentToken?.pos);
+          if (!CurrentTokenIs(TokenNames.Identifier, out var name) && !isExpr) ThrowExpected("function name", false);
+          if (name != (Token?)null) MoveToNextToken();
+          Expect(TokenNames.OpRndBracket, false, "(");
           MoveToNextToken();
           List<Nodes.VariableNode> argNames = new();
           while (CurrentToken != TokenNames.ClRndBracket) {
-            if (CurrentToken != TokenNames.Identifier) throw new SyntaxError("Expected argument name or \")\"", CurrentToken?.pos);
-            argNames.Add(new Nodes.VariableNode(CurrentToken.text));
+            Expect(TokenNames.Identifier, false, "argument name or \")\"", false);
+            argNames.Add(new Nodes.VariableNode(CurrentToken!.text));
             MoveToNextToken();
             if (CurrentToken != TokenNames.ClRndBracket && CurrentToken != TokenNames.Comma_operator)
-              throw new SyntaxError("Expected \",\" or \")\"", CurrentToken?.pos);
+              ThrowExpected("\",\" or \")\"", false);
             if (CurrentToken == TokenNames.Comma_operator) MoveToNextToken();
           }
           MoveToNextToken();
-          if (CurrentToken != TokenNames.OpCurlyBracket) throw new SyntaxError("Expected {", CurrentToken?.pos);
+          Expect(TokenNames.OpCurlyBracket, false, "{");
           MoveToNextToken();
           List<Node> body = Parse(int.MaxValue, TokenNames.ClCurlyBracket);
-          return new(body, name!.text, argNames);
+          return new(body, name?.text, argNames);
         }
         private Node ParseExpression() => ParseBinaryOperators(ParsePrimary(), 0);
         private Statements.UnaryExpression ParseUnaryOperator() {
           var op = Nodes.OperatorNode.TryConstruct(CurrentToken!, true);
-          if (op == null) throw new SyntaxError("Expected unary operator (\"+\", \"-\", \"!\" or \"~\")");
+          if (op == null) ThrowExpected("unary operator (\"+\",  \"-\", \"!\" or \"~\")", false);
           MoveToNextToken();
-          var expr = ParseBinaryOperators(ParsePrimary(), op.type);
+          var expr = ParseBinaryOperators(ParsePrimary(), op!.type);
           return new(op, expr);
         }
         private Node ParseBinaryOperators(Node lhs, int minPrecedence) {
           start:
-          if (CurrentToken!.flags.HasFlag(Flags.Operator)) {
+          if (CurrentToken?.flags.HasFlag(Flags.Operator) ?? false) {
             Nodes.OperatorNode? lookahead = Nodes.OperatorNode.TryConstruct(CurrentToken);
             while (lookahead != null && lookahead.type >= minPrecedence) {
               if (CurrentToken == TokenNames.OpRndBracket || CurrentToken == TokenNames.OpSqBracket) {
-#pragma warning disable IDE0059 // supress warning because name of variable must be accessed to use recursion
+#pragma warning disable IDE0059 // suppress warning because name of variable must be accessed to use recursion
                 var a = (ref Node n) => { return; };
 #pragma warning restore IDE0059
                 a = (ref Node n) => {
@@ -430,7 +523,7 @@ namespace TableLanguage {
                       n,
                       ParseExpression()
                     );
-                    if (CurrentToken != TokenNames.ClSqBracket) throw new SyntaxError("Expected ]", CurrentToken?.pos);
+                    Expect(TokenNames.ClSqBracket, false, "]");
                     MoveToNextToken();
                   }
                 };
@@ -464,7 +557,7 @@ namespace TableLanguage {
           //   [expr] = expr;
           //   name = expr;
           // }
-          if (CurrentToken != TokenNames.OpCurlyBracket) throw new SyntaxError("Expected {", CurrentToken?.pos);
+          Expect(TokenNames.OpCurlyBracket, false, "{");
           MoveToNextToken();
           Dictionary<Node, Node> keysAndValues = new();
           while (CurrentToken != TokenNames.ClCurlyBracket) {
@@ -473,17 +566,17 @@ namespace TableLanguage {
               // Dynamic key
               MoveToNextToken();
               key = ParseExpression();
-              if (CurrentToken != TokenNames.ClSqBracket) throw new SyntaxError("Expected ]", CurrentToken?.pos);
+              Expect(TokenNames.ClSqBracket, false, "]");
               MoveToNextToken();
             } else {
               key = ParsePrimary();
               // Prop name must be string with or without quotation marks
-              if (key is not Nodes.StringNode && key is not Nodes.VariableNode) throw new SyntaxError("Expected property name");
+              if (key is not Nodes.StringNode && key is not Nodes.VariableNode) ThrowExpected("property name", false);
             }
-            if (CurrentToken != TokenNames.Assignment_operator) throw new SyntaxError("Expected =", CurrentToken?.pos);
+            Expect(TokenNames.Assignment_operator, false, "=");
             MoveToNextToken();
             var value = ParseExpression();
-            if (CurrentToken != TokenNames.Semicolon && CurrentToken != TokenNames.ClCurlyBracket) throw new SyntaxError("Expected ';' or '}'", CurrentToken?.pos);
+            if (CurrentToken != TokenNames.Semicolon && CurrentToken != TokenNames.ClCurlyBracket) ThrowExpected("';' or '}'", false);
             if (CurrentToken == TokenNames.Semicolon) MoveToNextToken(); // Move after semicolon
             keysAndValues.Add(key, value);
           }
@@ -497,23 +590,12 @@ namespace TableLanguage {
           //  ]
           // Comma can be omitted before closing bracket
           List<Node?> elems = new();
-          if (CurrentToken != TokenNames.OpSqBracket) throw new SyntaxError("Expected [", CurrentToken?.pos);
+          Expect(TokenNames.OpSqBracket, false, "[");
           MoveToNextToken();
-          //while (CurrentToken != TokenNames.ClSqBracket) {
-          //  if (CurrentToken == TokenNames.Semicolon) {
-          //    elems.Add(null);
-          //    MoveToNextToken();
-          //    continue;
-          //  };
-          //  elems.Add(ParseExpression());
-          //  if (CurrentToken != TokenNames.Semicolon && CurrentToken != TokenNames.ClSqBracket)
-          //    throw new SyntaxError($"Unexpected \"{CurrentToken.text}\", expected ']' or ','");
-          //  if (CurrentToken == TokenNames.Semicolon) MoveToNextToken();
-          //}
-          //MoveToNextToken();
           return new(ParseCommas(TokenNames.ClSqBracket!)!);
         }
         private Node ParsePrimary() {
+          // primary ::= ( expr ) | object-literal | array-literal | unary-operator + expr
           if (CurrentToken == TokenNames.OpCurlyBracket) return ParseObject();
           if (CurrentToken == TokenNames.OpSqBracket) return ParseArray();
           if (CurrentToken == TokenNames.OpRndBracket) {
@@ -521,7 +603,7 @@ namespace TableLanguage {
             // Parsing expression in Bracket
             MoveToNextToken();
             var expr = ParseExpression();
-            if (CurrentToken != TokenNames.ClRndBracket) throw new SyntaxError("Expected )", CurrentToken?.pos);
+            Expect(TokenNames.ClRndBracket, false, ")");
             MoveToNextToken();
             return expr;
           }
@@ -531,12 +613,15 @@ namespace TableLanguage {
             || CurrentToken == TokenNames.BitwiseNot_operator
             || CurrentToken == TokenNames.LogicNot_operator
           ) return ParseUnaryOperator();
+          if (CurrentToken == TokenNames.Function) return ParseFunctionDeclaration(true);
           MoveToNextToken();
           if (TokenIs(PreviousToken, TokenNames.NumberLiteral, out var num)) return new Nodes.NumberNode(num!.text);
           if (TokenIs(PreviousToken, TokenNames.Identifier, out var var)) return new Nodes.VariableNode(var!.text);
           if (TokenIs(PreviousToken, TokenNames.StringLiteral, out var str)) return new Nodes.StringNode(str!.text);
           if (PreviousToken != (Token?)null && PreviousToken.flags.HasFlag(Flags.BoolLiteral)) return new Nodes.BooleanNode(PreviousToken!);
-          throw new SyntaxError($"Unexpected token: {PreviousToken!.text}", PreviousToken?.pos);
+          pos--;
+          return null;
+          //ThrowSyntaxError($"Unexpected token: {PreviousToken!.text}", PreviousToken?.pos);
         }
       }
       public static List<Node> Parse(List<Token> tokens) {
@@ -693,6 +778,7 @@ namespace TableLanguage {
       public static readonly string If = "if_keyword";
       public static readonly string Else = "else_keyword";
       public static readonly string For = "for_keyword";
+      public static readonly string Do = "do_keyword";
       public static readonly string While = "while_keyword";
       public static readonly string Return = "return keyword";
       public static readonly string Dot_operator = "dot_operator";
@@ -738,11 +824,11 @@ namespace TableLanguage {
         TokenType.ToDictItem(TokenNames.Comma_operator, "^,", Flags.Operator),
         TokenType.ToDictItem(TokenNames.Semicolon, "^;", Flags.InstructionSeparator),
         TokenType.ToDictItem(TokenNames.Assignment_operator, @"^=(?!=)", Flags.Operator),
-        TokenType.ToDictItem(TokenNames.AssignmentAddition_operator, @"\+=", Flags.Operator),
-        TokenType.ToDictItem(TokenNames.AssignmentSubtraction_operator, @"\-=", Flags.Operator),
+        TokenType.ToDictItem(TokenNames.AssignmentAddition_operator, @"^\+=", Flags.Operator),
+        TokenType.ToDictItem(TokenNames.AssignmentSubtraction_operator, @"^\-=", Flags.Operator),
         TokenType.ToDictItem(TokenNames.AssignmentMultiplication_operator, @"^\*=", Flags.Operator),
-        TokenType.ToDictItem(TokenNames.AssignmentDivision_operator, @"\/=", Flags.Operator),
-        TokenType.ToDictItem(TokenNames.AssignmentRemainder_operator, @"%=", Flags.Operator),
+        TokenType.ToDictItem(TokenNames.AssignmentDivision_operator, @"^\/=", Flags.Operator),
+        TokenType.ToDictItem(TokenNames.AssignmentRemainder_operator, @"^%=", Flags.Operator),
         TokenType.ToDictItem(TokenNames.NumberLiteral, @"^0b[01]+|^0x[0-9a-fA-F]+|^\.\d+|^\d+(\.\d*)?", Flags.Literal | Flags.NumericLiteral),
         TokenType.ToDictItem(TokenNames.StringLiteral, "^\".*?\"|^'.*?'", Flags.StringLiteral | Flags.Literal),
         TokenType.ToDictItem(TokenNames.VariableDeclaration, "^let", Flags.Declaration | Flags.VariableDeclaration | Flags.Keyword),
@@ -755,8 +841,9 @@ namespace TableLanguage {
         TokenType.ToDictItem(TokenNames.ClCurlyBracket, @"^\}", Flags.ClosingBracket | Flags.CurlyBracket | Flags.Bracket),
         TokenType.ToDictItem(TokenNames.Function, "^function", Flags.Keyword),
         TokenType.ToDictItem(TokenNames.If, "^if", Flags.Keyword),
-        TokenType.ToDictItem(TokenNames.Else, "else", Flags.Keyword),
+        TokenType.ToDictItem(TokenNames.Else, "^else", Flags.Keyword),
         TokenType.ToDictItem(TokenNames.For, "^for", Flags.Keyword),
+        TokenType.ToDictItem(TokenNames.Do, "^do", Flags.Keyword),
         TokenType.ToDictItem(TokenNames.While, "^while", Flags.Keyword),
         TokenType.ToDictItem(TokenNames.Return, "^return", Flags.Keyword),
         TokenType.ToDictItem(TokenNames.Break, "^break", Flags.Keyword),
@@ -815,7 +902,8 @@ namespace TableLanguage {
     public static N Parse(T tokens) => Parser.Parse(tokens);
     public static T LexicalAnalysis(string input) => Lexer.Analysis(input);
     public static void PrintNode(Node node, int indent = 0, bool indentAtStart = true) {
-      if (indent != 0) Console.Write(string.Join("", Enumerable.Repeat(" ", indent)));
+      var wI = () => Console.Write(string.Join("", Enumerable.Repeat(" ", indent)));
+      if (indent != 0 && indentAtStart) wI();
       var w = (object p) => Console.Write(p);
       switch (node.Name) {
         case "NumberNode":
@@ -892,8 +980,11 @@ namespace TableLanguage {
         }
         case "FunctionDeclarationStatement":
           Statements.FunctionDeclarationStatement function = (Statements.FunctionDeclarationStatement)node;
-          w("function ");
-          w(function.name);
+          w("function");
+          if (function.name != null) {
+            w(" ");
+            w(function.name);
+          }
           w("(");
           for (var i = 0; i < function.args.Count; i++) {
             var arg = function.args[i];
@@ -906,6 +997,104 @@ namespace TableLanguage {
           }
           w("}");
           break;
+        case "Block": {
+          w("{\n");
+          N nodes = ((Statements.Block)node).nodes;
+          foreach (var n in nodes) {
+            PrintNode(n, indent + 2);
+          }
+          w("\n");
+          wI();
+          w("}");
+          break;
+        }
+        case "IfStatement": {
+          var ifStm = (Statements.IfStatement)node;
+          w("if (");
+          PrintNode(ifStm.condition);
+          w(") ");
+          var body = ifStm.body;
+          var elseBody = ifStm.elseBody;
+          var isBodyBlock = body.Name == "Block";
+          if (!isBodyBlock) {
+            w("\n");
+            PrintNode(body, indent + 2);
+          } else PrintNode(body, indent, false);
+          if (elseBody == null) break;
+          if (isBodyBlock) {
+            w(" else ");
+            PrintNode(elseBody, indent, false);
+          } else {
+            w("\nelse\n");
+            PrintNode(elseBody, indent + 2);
+          }
+          break;
+        }
+        case "WhileStatement": {
+          var wh = (Statements.WhileStatement)node;
+          w("while (");
+          PrintNode(wh.condition);
+          w(") ");
+          if (wh.body == null) {
+            w(";");
+            break;
+          }
+          var body = wh.body;
+          if (body.Name == "Block") {
+            PrintNode(body, indent, false);
+          } else {
+            w("\n");
+            PrintNode(body, indent + 2);
+          }
+          break;
+        }
+        case "DoWhileStatement": {
+          var st = (Statements.DoWhileStatement)node;
+          w("do ");
+          var body = st.body;
+          if (body.Name == "Block") {
+            PrintNode(body, indent + 2, false);
+            w(" ");
+          } else {
+            w("\n");
+            PrintNode(body, indent + 2);
+            w("\n");
+          }
+          w("while (");
+          PrintNode(st.condition);
+          w(");");
+          break;
+        }
+        case "ForStatement": {
+          var st = (Statements.ForStatement)node;
+          var init = st.init;
+          var cond = st.condition;
+          var afterInter = st.afterIteration;
+          var body = st.body;
+          w("for (");
+          if (init != null) PrintNode(init);
+          if (init?.Name != "DeclarationStatement") w(";");
+          if (cond != null) {
+            w(" ");
+            PrintNode(cond);
+          }
+          w(";");
+          if (afterInter != null) {
+            w(" ");
+            PrintNode(afterInter);
+          }
+          w(") ");
+          if (body == null) {
+            w(";"); break;
+          }
+          if (body.Name == "Block") PrintNode(body, indent, false);
+          else {
+            w("\n");
+            PrintNode(body, indent + 2);
+          }
+          break;
+        }
+
       }
     }
 #endif
