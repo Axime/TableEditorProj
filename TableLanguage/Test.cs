@@ -20,13 +20,16 @@ namespace TableLanguage {
       "for (let i = 0; i < 5; i += 1) {\n" +
       "  console.log(i);\n" +
       "}" +
-      //"let i = !!!number.slice((1,1), 3, 5 + 5) + a['filter'](isEven) + !!!!5;\n" +
-      //"function n(arg,arg2) {}" +
+      "//let i = !!!number.slice((1,1), 3, 5 + 5) + a['filter'](isEven) + !!!!5;\n" +
+      "function sum(x, y) {\n" +
+      "  const s = x + y;\n" +
+      "  return s;\n" +
+      "}" +
       "";
-      var a = Lang.LexicalAnalysis(c);
       Console.WriteLine("Raw code:\n=======================================");
       Console.WriteLine(c);
       Console.WriteLine("=======================================");
+      var a = Lang.LexicalAnalysis(c);
       //foreach (var t in a) {
       //  Console.WriteLine($" Text: {t.text}\tpos: {t.pos}\ttype: {t.type.name}");
       //}

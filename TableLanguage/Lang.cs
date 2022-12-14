@@ -320,12 +320,46 @@ namespace TableLanguage {
               Add(ParseFor());
               continue;
             }
+            if (t == TokenNames.Break) {
+              Add(ParseBreak());
+              continue;
+            }
+            if (t == TokenNames.Continue) {
+              Add(ParseContinue());
+              continue;
+            }
+            if (t == TokenNames.Return) {
+              Add(ParseReturn());
+              continue;
+            }
             Add(ParseExpression());
             Expect(TokenNames.Semicolon, false, ";");
             MoveToNextToken();
           }
           if (WhileToken != null || count != int.MaxValue) return localNodes;
           return nodes;
+        }
+        private Statements.ReturnStatement ParseReturn() {
+          Expect(TokenNames.Return, false, "return");
+          MoveToNextToken();
+          var ret = ParseExpression();
+          Expect(TokenNames.Semicolon, false, ";");
+          MoveToNextToken();
+          return new(ret);
+        }
+        private Statements.ContinueStatement ParseContinue() {
+          Expect(TokenNames.Continue, false, "continue");
+          MoveToNextToken();
+          Expect(TokenNames.Semicolon, false, ";");
+          MoveToNextToken();
+          return new();
+        }
+        private Statements.BreakStatement ParseBreak() {
+          Expect(TokenNames.Break, false, "break");
+          MoveToNextToken();
+          Expect(TokenNames.Semicolon, false, ";");
+          MoveToNextToken();
+          return new();
         }
         private Statements.ForStatement ParseFor() {
           Expect(TokenNames.For, false, "for");
@@ -673,6 +707,7 @@ namespace TableLanguage {
       SquareBracket = 65536,
       CurlyBracket = 131072,
       BoolLiteral = 262144,
+      Comment = 524288
     }
 #if DEBUG
     public
@@ -686,7 +721,11 @@ namespace TableLanguage {
         this.regex = regex;
         this.flags = flags;
       }
-      public static KeyValuePair<string, TokenType> ToDictItem(string name, string regex, Flags flags) => new(name, new TokenType(name, new Regex(regex, RegexOptions.Compiled), flags));
+      public static KeyValuePair<string, TokenType> ToDictItem(
+        string name,
+        string regex,
+        Flags flags
+      ) => new(name, new TokenType(name, new Regex(regex, RegexOptions.Compiled), flags));
     }
 #if DEBUG
     public
@@ -806,7 +845,7 @@ namespace TableLanguage {
       public static readonly string FalseLiteral = "false_literal";
       public static readonly string NullLiteral = "null_literal";
       public static readonly string Identifier = "identifier";
-
+      public static readonly string Comment = "comment";
       public static readonly string FunctionCall_operator = "function_call_operator";
     }
     private static class Lexer {
@@ -815,7 +854,7 @@ namespace TableLanguage {
         TokenType.ToDictItem(TokenNames.Add_operator, @"^\+(?![\+=])", Flags.Operator),
         TokenType.ToDictItem(TokenNames.Subtract_operator, @"^\-(?![\-=])", Flags.Operator),
         TokenType.ToDictItem(TokenNames.Mult_operator, @"^\*(?![\*\=])", Flags.Operator),
-        TokenType.ToDictItem(TokenNames.Division_operator, @"^/(?!=)", Flags.Operator),
+        TokenType.ToDictItem(TokenNames.Division_operator, @"^/(?![=/\*])", Flags.Operator),
         TokenType.ToDictItem(TokenNames.Remainder_operator, "^%(?!=)", Flags.Operator),
         TokenType.ToDictItem(TokenNames.Power_operator, @"^\*\*", Flags.Operator),
         TokenType.ToDictItem(TokenNames.Increment_operator, @"^\+\+", Flags.Operator),
@@ -866,6 +905,7 @@ namespace TableLanguage {
         TokenType.ToDictItem(TokenNames.TrueLiteral, @"^true(?!\w)", Flags.Literal | Flags.BoolLiteral),
         TokenType.ToDictItem(TokenNames.FalseLiteral, @"^false(?!\w)", Flags.Literal | Flags.BoolLiteral),
         TokenType.ToDictItem(TokenNames.NullLiteral, @"^null(?!\w)", Flags.Literal),
+        TokenType.ToDictItem(TokenNames.Comment, @"^//.*(?:\n|$)|^/\*(.|\s)*?\*/", Flags.Comment),
         //TokenType.ToDictItem(TokenNames.Identifier, "^[$a-zA-Zа-яА-ЯёЁ_][\\w$_]*(?=[\\(\\)+\\-\\*\\/=;:\\s\\.,\\?%\\|\\[\\]\\{\\}\"]')", Flags.Identifier),
         TokenType.ToDictItem(TokenNames.Identifier, "^[$a-zA-Zа-яА-ЯёЁ_][$a-zA-Zа-яА-ЯёЁ_0-9]*", Flags.Identifier),
       });
@@ -873,7 +913,7 @@ namespace TableLanguage {
         List<Token> tokens = new();
         int pos = 0;
         while (Next(code, ref tokens, ref pos)) ;
-        tokens.RemoveAll(t => t.flags.HasFlag(Flags.Whitespace));
+        tokens.RemoveAll(t => t.flags.HasFlag(Flags.Whitespace) || t.flags.HasFlag(Flags.Comment));
         return tokens;
 
       }
@@ -887,7 +927,8 @@ namespace TableLanguage {
           pos += m.Length;
           return true;
         }
-        throw new SyntaxError($"Syntax Error at position {pos}:\n{code[pos..]}", pos);
+        throw new SyntaxError($"Syntax Error at position {pos}:\n{code[(pos < 20 ? pos : pos - 20)..(pos + 10)].Replace('\n', ' ')}\n" +
+          $"{string.Join("", Enumerable.Repeat(" ", (pos < 20 ? pos : 20)))}^^", null);
       }
     }
     private static class Runner {
@@ -991,19 +1032,16 @@ namespace TableLanguage {
             w(arg.name);
             if (i != function.args.Count - 1) w(", ");
           }
-          w(") {");
-          foreach (var statement in function.body) {
-            PrintNode(statement, indent + 2);
-          }
-          w("}");
+          w(")");
+          PrintNode(new Statements.Block(function.body), indent);
           break;
         case "Block": {
           w("{\n");
           N nodes = ((Statements.Block)node).nodes;
           foreach (var n in nodes) {
             PrintNode(n, indent + 2);
+            w("\n");
           }
-          w("\n");
           wI();
           w("}");
           break;
@@ -1094,7 +1132,22 @@ namespace TableLanguage {
           }
           break;
         }
-
+        case "BreakStatement":
+          w("break;");
+          break;
+        case "ContinueStatement":
+          w("continue;");
+          break;
+        case "ReturnStatement": {
+          var ret = (Statements.ReturnStatement)node;
+          w("return");
+          if (ret.returnValue != null) {
+            w(" ");
+            PrintNode(ret.returnValue);
+          }
+          w(";");
+          break;
+        }
       }
     }
 #endif
