@@ -6,12 +6,84 @@
         xmlns:local="clr-namespace:TableEditor"
         mc:Ignorable="d"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        Title="Table Editor" Height="450" Width="800">
+        Height="720" Width="1280"
+        Background="#1E1E1E"
+        ResizeMode="CanResizeWithGrip" WindowStyle="None"
+        AllowsTransparency="True">
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="5*"/>
+            <RowDefinition Height="133*"/>
+            <RowDefinition Height="6*"/>
+        </Grid.RowDefinitions>
+
         <Grid.ColumnDefinitions>
-            
+            <ColumnDefinition Width="15*"/>
+            <ColumnDefinition Width="52*"/>
+            <ColumnDefinition Width="189*"/>
         </Grid.ColumnDefinitions>
+
+        <Border BorderBrush="#141414" Grid.ColumnSpan="3"/>
+
+        <Border Background="#333333" Grid.Row="1"/>
+        <Border Background="#252526" Grid.Column="1" Grid.Row="1"/>
+
+        <Grid x:Name="Right_TableField" Grid.Row="1" Grid.Column="1" Visibility="Collapsed">
+            <Label Content="Таблицы" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="20"/>
+        </Grid>
+
+        <Grid x:Name="Settings" Grid.Row="1" Grid.Column="1" Visibility="Collapsed">
+            <Label Content="Настройки" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="20"/>
+        </Grid>
+
+        <Border Background="#007ACC" Grid.Row="2" Grid.ColumnSpan="3"/>
+
+        <Border Background="#141414" Grid.Row="0" Grid.ColumnSpan="3"/>
+
+        <Image x:Name="user_icon" Source="/icons/56556.jpg" Stretch="Fill" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Center" Height="50" Width="50" Margin="0,16,0,0">
+            <Image.Clip>
+                <RectangleGeometry RadiusX="7" RadiusY="7" Rect="0,0,50,50"/>
+            </Image.Clip>
+        </Image>
+
+        <Button  HorizontalAlignment="Center" Margin="0,130,0,0" Grid.Row="1" VerticalAlignment="Top" Height="50" Width="50" BorderThickness="0">
+            <Button.Background>
+                <ImageBrush ImageSource="/icons/files1.png"/>
+            </Button.Background>
+        </Button>
+
+        <Button  HorizontalAlignment="Center" Margin="0,570,0,0" Grid.Row="1" VerticalAlignment="Top" Height="50" Width="50" BorderThickness="0">
+            <Button.Background>
+                <ImageBrush ImageSource="/icons/settings1.png"/>
+            </Button.Background>
+        </Button>
+
+        <Label x:Name="user_nickname" Grid.Column="1" Content="user__nickname" HorizontalAlignment="Left"  Grid.Row="2" VerticalAlignment="Center" Width="185" Height="44" FontSize="24" FontFamily="Consolas"/>
+        <Label x:Name="status_bar" Grid.Column="2" Content="status__bar" HorizontalAlignment="Left"  Grid.Row="2" VerticalAlignment="Center" Width="180" Height="44" FontSize="24" Margin="90,0,0,0" FontFamily="Consolas"/>
+
+        <Grid Grid.Column="2" Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="67*"/>
+                <RowDefinition Height="66*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="94*"/>
+                <ColumnDefinition Width="95*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel x:Name="lastTableList" Margin="50 50 50 50">
+                <Label Content="Последние таблицы:" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Consolas" FontSize="20"/>
+                <Label x:Name="undefinedTableOnClient" Content="1.Undefined..." HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="Gray" FontFamily="Consolas" FontSize="20"/>
+            </StackPanel>
+
+            <StackPanel x:Name="tutorials" Margin="52,50,53,50" Grid.Column="1">
+                <Label Content="Уроки по этой таблице:" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Consolas" FontSize="20"/>
+                <Label x:Name="undefinedTutorials" Content="1.Undefined..." HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="Gray" FontFamily="Consolas" FontSize="20"/>
+            </StackPanel>
+
+
+        </Grid>
+
     </Grid>
-    
 </Window>
