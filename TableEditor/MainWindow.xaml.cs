@@ -2,7 +2,8 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-
+using System.Windows.Navigation;
+using TableEditor;
 
 namespace Main {
   public partial class MainWindow : Window {
@@ -41,8 +42,7 @@ namespace Main {
       try {
         var response = await API.Method.Call(API.Method.Auth.Registration, user);
         response.IfOk(res => {
-          Console.WriteLine("Регистрация прошла успешно");
-          Console.WriteLine("Загрузка...");
+          ErrorField.Text = "Регистрация прошла успешно!";
         }).IfError(err => {
           ErrorField.Visibility = Visibility.Visible;
           ErrorField.Text = "Неправильный логин или пароль";
@@ -57,6 +57,13 @@ namespace Main {
       try {
         var response = await API.Method.Call(API.Method.Auth.Login, data);
         Console.WriteLine(response);
+        response.IfOk(res => {
+          WorkWindow workWindow = new WorkWindow();
+          workWindow.Show();
+          this.Close();
+
+
+        });
       } catch (Exception e) {
         Console.WriteLine(e.ToString());
       }

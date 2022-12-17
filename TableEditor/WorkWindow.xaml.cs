@@ -18,6 +18,12 @@ namespace TableEditor {
       InitializeComponent();
     }
 
-    
+    private void BTableList(object sender, RoutedEventArgs e) {
+      ColumnFunctionsField.Width = new(0);
+    }
+
+    private void BSettings(object sender, RoutedEventArgs e) {
+
+    }
   }
 }
