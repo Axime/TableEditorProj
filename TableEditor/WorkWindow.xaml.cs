@@ -19,6 +19,10 @@ namespace TableEditor {
     }
 
     private void BTableList(object sender, RoutedEventArgs e) {
+      if (ColumnFunctionsField.ActualWidth == 0) {
+        ColumnFunctionsField.Width = new(270d);
+        return;
+      }
       ColumnFunctionsField.Width = new(0);
     }
 
