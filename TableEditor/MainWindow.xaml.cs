@@ -66,6 +66,7 @@ namespace Main {
         });
       } catch (Exception e) {
         Console.WriteLine(e.ToString());
+        ErrorField.Text = "Неправильный логин или пароль";
       }
     }
 

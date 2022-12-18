@@ -8,8 +8,9 @@
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Height="720" Width="1280"
         Background="#1E1E1E"
-        ResizeMode="CanResizeWithGrip" WindowStyle="None"
+        ResizeMode="CanResizeWithGrip" WindowStyle="SingleBorderWindow"
         AllowsTransparency="True">
+
 
     <Grid x:Name="BaseGrid">
         <Grid.RowDefinitions>
@@ -39,9 +40,9 @@
 
         <Border Background="#007ACC" Grid.Row="2" Grid.ColumnSpan="3"/>
 
-        <Border Background="#141414" Grid.Row="0" Grid.ColumnSpan="3"/>
+        <Border Background="#141414" Grid.Row="0" Grid.ColumnSpan="3" Visibility="Hidden"/>
 
-        <Image x:Name="user_icon" Source="/icons/56556.jpg" Stretch="Fill" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Center" Height="50" Width="50" Margin="0,16,0,0">
+        <Image x:Name="user_icon" Source="\icons\56556.jpg" Stretch="Fill" Grid.Row="1" VerticalAlignment="Top" HorizontalAlignment="Center" Height="50" Width="50" Margin="0,16,0,0">
             <Image.Clip>
                 <RectangleGeometry RadiusX="7" RadiusY="7" Rect="0,0,50,50"/>
             </Image.Clip>
@@ -49,13 +50,13 @@
 
         <Button  HorizontalAlignment="Center" Margin="0,130,0,0" Grid.Row="1" VerticalAlignment="Top" Height="50" Width="50" BorderThickness="0" Click="BTableList">
             <Button.Background>
-                <ImageBrush ImageSource="/icons/files1.png"/>
+                <ImageBrush ImageSource="\icons\files1.png"/>
             </Button.Background>
         </Button>
 
         <Button  HorizontalAlignment="Center" Margin="0,570,0,0" Grid.Row="1" VerticalAlignment="Top" Height="50" Width="50" BorderThickness="0" Click="BSettings">
             <Button.Background>
-                <ImageBrush ImageSource="/icons/settings1.png"/>
+                <ImageBrush ImageSource="\icons\settings1.png"/>
             </Button.Background>
         </Button>
 
