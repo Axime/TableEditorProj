@@ -16,9 +16,16 @@ namespace TableEditor {
   public partial class WorkWindow : Window {
     public WorkWindow() {
       InitializeComponent();
+      userNickname.Content = API.HTTP.UserNickname;
     }
 
-    private void BTableList(object sender, RoutedEventArgs e) {
+    void OpenField(Grid grid) {
+
+      List<Grid> fields = new List<Grid>() { Left_TableField, Settings, PersonalClient };
+
+      for (int i = 0; i < fields.Count; i++) { fields[i].Visibility = Visibility.Collapsed; }
+      grid.Visibility = Visibility.Visible;
+
       if (ColumnFunctionsField.ActualWidth == 0) {
         ColumnFunctionsField.Width = new(270d);
         return;
@@ -26,8 +33,10 @@ namespace TableEditor {
       ColumnFunctionsField.Width = new(0);
     }
 
-    private void BSettings(object sender, RoutedEventArgs e) {
-
-    }
+    void BTableList(object sender, RoutedEventArgs e) => OpenField(Left_TableField);
+    
+    void BSettings(object sender, RoutedEventArgs e) => OpenField(Settings);
+    
+    void BPersonalClient(object sender, RoutedEventArgs e) => OpenField(PersonalClient);
   }
 }

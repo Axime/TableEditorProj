@@ -58,6 +58,7 @@ namespace Main {
         var response = await API.Method.Call(API.Method.Auth.Login, data);
         Console.WriteLine(response);
         response.IfOk(res => {
+          API.HTTP.UserNickname = LoginField.Text;
           WorkWindow workWindow = new WorkWindow();
           workWindow.Show();
           this.Close();

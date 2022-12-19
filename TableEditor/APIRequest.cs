@@ -13,6 +13,13 @@ namespace API {
       get => _userToken;
       set => _userToken = value;
     }
+    private static string _userNickname = "undefined";
+    public static string UserNickname {
+      get => _userNickname; 
+      set => _userNickname = value;
+    }
+
+
     public record APIResponse<T> {
       public bool ok;
       public uint? error;
