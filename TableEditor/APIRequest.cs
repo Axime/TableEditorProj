@@ -15,7 +15,7 @@ namespace API {
     }
     private static string _userNickname = "undefined";
     public static string UserNickname {
-      get => _userNickname; 
+      get => _userNickname;
       set => _userNickname = value;
     }
 
@@ -43,13 +43,18 @@ namespace API {
 
   public static class Method {
     public interface IAPIRequestModel<Req, Res>
-    where Req : class
-    where Res : class {
-      public Req Request { get; }
-      public Res Response { get; }
+    where Req : class, new()
+    where Res : class, new() {
+      public Req Request { get => new(); }
+      public Res Response { get => new(); }
       public string Uri { get; }
     }
-    public async static Task<MethodResponse<HTTP.APIResponse<Res>, Res>> Call<Req, Res>(IAPIRequestModel<Req, Res> cl, Req value) where Req : class where Res : class => new MethodResponse<HTTP.APIResponse<Res>, Res>(await HTTP.SendAPIRequest<Req, Res>(cl.Uri, value));
+    public async static Task<MethodResponse<HTTP.APIResponse<Res>, Res>> Call<
+      Req, Res
+    >(IAPIRequestModel<Req, Res> cl, Req value)
+      where Req : class, new()
+      where Res : class, new()
+      => new MethodResponse<HTTP.APIResponse<Res>, Res>(await HTTP.SendAPIRequest<Req, Res>(cl.Uri, value));
     public class MethodResponse<Res, T> where Res : HTTP.APIResponse<T> {
       private readonly Res? result;
       public MethodResponse(Res? result) {
@@ -97,8 +102,6 @@ namespace API {
       }
       public static readonly LoginModel Login = new();
       public class LoginModel : IAPIRequestModel<LoginModel.Request, LoginModel.Response> {
-        Request IAPIRequestModel<Request, Response>.Request => new();
-        Response IAPIRequestModel<Request, Response>.Response => new();
         string IAPIRequestModel<Request, Response>.Uri => "api/auth.login";
         public record Request {
           public string username;

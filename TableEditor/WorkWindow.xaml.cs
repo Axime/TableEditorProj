@@ -19,24 +19,23 @@ namespace TableEditor {
       userNickname.Content = API.HTTP.UserNickname;
     }
 
-    void OpenField(Grid grid) {
+    void ToggleField(ref Grid grid) {
 
-      List<Grid> fields = new List<Grid>() { Left_TableField, Settings, PersonalClient };
-
+      List<Grid> fields = new() { Left_TableField, Settings, PersonalClient };
+      bool isAlreadyShown = grid.Visibility == Visibility.Visible;
       for (int i = 0; i < fields.Count; i++) { fields[i].Visibility = Visibility.Collapsed; }
-      grid.Visibility = Visibility.Visible;
-
-      if (ColumnFunctionsField.ActualWidth == 0) {
-        ColumnFunctionsField.Width = new(270d);
+      if (!isAlreadyShown) {
+        grid.Visibility = Visibility.Visible;
+        ColumnFunctionsField.Width = new(285d);
         return;
       }
       ColumnFunctionsField.Width = new(0);
     }
 
-    void BTableList(object sender, RoutedEventArgs e) => OpenField(Left_TableField);
-    
-    void BSettings(object sender, RoutedEventArgs e) => OpenField(Settings);
-    
-    void BPersonalClient(object sender, RoutedEventArgs e) => OpenField(PersonalClient);
+    void BTableList(object sender, RoutedEventArgs e) => ToggleField(ref Left_TableField);
+
+    void BSettings(object sender, RoutedEventArgs e) => ToggleField(ref Settings);
+
+    void BPersonalClient(object sender, RoutedEventArgs e) => ToggleField(ref PersonalClient);
   }
 }
