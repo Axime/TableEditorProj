@@ -5,7 +5,7 @@ VisualStudioVersion = 17.4.33110.190
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TableEditor", "TableEditor\TableEditor.csproj", "{F83707EE-B49C-46DC-917A-765A147EAE59}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TableLanguage", "TableLanguage\TableLanguage.csproj", "{6EAEB781-C921-459D-9C0D-A8CFCB546F34}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TableLanguage", "TableLanguage\TableLanguage.csproj", "{6EAEB781-C921-459D-9C0D-A8CFCB546F34}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

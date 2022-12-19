@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using System.Linq;
 
 #if DEBUG
-using System.Linq;
 using T = System.Collections.Generic.List<TableLanguage.Lang.Token>;
 using N = System.Collections.Generic.List<TableLanguage.Lang.Node>;
 #endif
