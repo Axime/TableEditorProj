@@ -21,9 +21,57 @@
 
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="50"/>
-            <ColumnDefinition x:Name="ColumnFunctionsField" Width="285"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
+
+        <Grid Grid.Column="1" Grid.RowSpan="2">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="67*"/>
+                <RowDefinition Height="66*"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="94*"/>
+                <ColumnDefinition Width="95*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel x:Name="lastTableList" Margin="50 50 50 50">
+                <Label Content="Последние таблицы:" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Consolas" FontSize="15"/>
+                <Label x:Name="undefinedTableOnClient" Content="1.Последних таблиц не найдено" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray" FontFamily="Consolas" FontSize="15"/>
+            </StackPanel>
+
+            <StackPanel x:Name="tutorials" Margin="52,50,53,50" Grid.Column="1">
+                <Label Content="Уроки по этой таблице:" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Consolas" FontSize="15"/>
+                <Label x:Name="undefinedTutorials" Content="1.Уроков не найдено" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray" FontFamily="Consolas" FontSize="15"/>
+            </StackPanel>
+
+        </Grid>
+
+
+        <Border x:Name="FuncFieldBody" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="250">
+
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="7" ShadowDepth="1" Color="#FF232323"/>
+            </Border.Effect>
+
+            <Grid x:Name="LeftFuncField" Grid.Column="1" Visibility="Visible" Grid.RowSpan="2">
+
+                <StackPanel x:Name="PersonalClient">
+                    <Label Content="Пользователь" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
+                </StackPanel>
+
+
+                <StackPanel  x:Name="TableList" Visibility="Collapsed">
+                    <Label Content="Таблицы" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
+                </StackPanel>
+
+
+                <StackPanel x:Name="Settings" Visibility="Collapsed">
+                    <Label Content="Настройки" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
+                </StackPanel>
+
+            </Grid>
+        </Border>
+
 
         <Border Background="#333333" Grid.RowSpan="2">
             <StackPanel>
@@ -50,18 +98,6 @@
 
         </Border>
 
-        <Border Background="#252526" Grid.Column="1" Grid.RowSpan="2" />
-
-        <Grid x:Name="Left_TableField" Grid.Column="1" Visibility="Collapsed" Grid.RowSpan="2">
-            <Label Content="Таблицы" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-        </Grid>
-
-        <Grid x:Name="Settings" Grid.Column="1" Visibility="Collapsed" Grid.RowSpan="2">
-            <Label Content="Настройки" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-        </Grid>
-        <Grid x:Name="PersonalClient" Grid.Column="1" Visibility="Visible" Grid.RowSpan="2">
-            <Label Content="Пользователь" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-        </Grid>
 
         <Border Background="#007ACC" Grid.ColumnSpan="3" VerticalAlignment="Center" Grid.Row="1">
 
@@ -72,28 +108,6 @@
 
         </Border>
 
-
-        <Grid Grid.Column="2" Grid.RowSpan="2">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="67*"/>
-                <RowDefinition Height="66*"/>
-            </Grid.RowDefinitions>
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="94*"/>
-                <ColumnDefinition Width="95*"/>
-            </Grid.ColumnDefinitions>
-
-            <StackPanel x:Name="lastTableList" Margin="50 50 50 50">
-                <Label Content="Последние таблицы:" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Consolas" FontSize="15"/>
-                <Label x:Name="undefinedTableOnClient" Content="1.Последних таблиц не найдено" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray" FontFamily="Consolas" FontSize="15"/>
-            </StackPanel>
-
-            <StackPanel x:Name="tutorials" Margin="52,50,53,50" Grid.Column="1">
-                <Label Content="Уроки по этой таблице:" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Consolas" FontSize="15"/>
-                <Label x:Name="undefinedTutorials" Content="1.Уроков не найдено" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray" FontFamily="Consolas" FontSize="15"/>
-            </StackPanel>
-            
-        </Grid>
 
     </Grid>
 </Window>
