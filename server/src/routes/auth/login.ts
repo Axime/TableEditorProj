@@ -18,7 +18,7 @@ RegisterRoute(new Route<LoginBodyParams>('/api/auth.login',
   (req, res) => {
     try {
       Logger.debugLog(
-        '%s: Запрос на регистрацию',
+        '%s: Запрос на логин',
         prefix
       );
       const {
