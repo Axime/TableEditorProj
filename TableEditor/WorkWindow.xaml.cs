@@ -37,5 +37,9 @@ namespace TableEditor {
     void BSettings(object sender, RoutedEventArgs e) => ToggleField(ref Settings);
 
     void BPersonalClient(object sender, RoutedEventArgs e) => ToggleField(ref PersonalClient);
+
+    void TestFillTable(object sender, RoutedEventArgs e) {
+
+    }
   }
 }
