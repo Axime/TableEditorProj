@@ -11,6 +11,7 @@
         Background="#1E1E1E"
         ResizeMode="CanResizeWithGrip"
         Title="Table Editor">
+    
 
 
     <Grid x:Name="BaseGrid">
@@ -67,9 +68,9 @@
             <DataGrid x:Name="DataGrids" Grid.Row="1" AutoGenerateColumns="False" CanUserResizeColumns="True" CanUserAddRows="True">
                 <DataGrid.Columns>
 
-                    <DataGridTextColumn Header="Name" Binding="{Binding Names}" />
-                    <DataGridTextColumn Header="Status" Binding="{Binding Statuss}" />
-                    <DataGridTextColumn Header="Age" Binding="{Binding Ages}" />
+                    <DataGridTextColumn Header="Name"/>
+                    <DataGridTextColumn Header="Status"/>
+                    <DataGridTextColumn Header="Age"/>
 
                 </DataGrid.Columns>
 
@@ -80,7 +81,7 @@
 
         </Grid>
 
-        <Border x:Name="FuncFieldBody" Visibility="Visible" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="250" Grid.RowSpan="2">
+        <Border x:Name="FuncFieldBody" Visibility="Visible" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="0" Grid.RowSpan="2">
 
             <Border.Effect>
                 <DropShadowEffect BlurRadius="7" ShadowDepth="1" Color="#FF232323"/>
