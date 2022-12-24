@@ -17,6 +17,7 @@ namespace TableEditor {
     public WorkWindow() {
       InitializeComponent();
       userNickname.Content = API.HTTP.UserNickname;
+      status_bar.Content = "develop moment";
     }
 
     void ToggleField(ref StackPanel grid) {
@@ -38,8 +39,22 @@ namespace TableEditor {
 
     void BPersonalClient(object sender, RoutedEventArgs e) => ToggleField(ref PersonalClient);
 
-    void TestFillTable(object sender, RoutedEventArgs e) {
+    
 
+    void BCreateTable(object sender, RoutedEventArgs e) {
+      var dg = new DataGrid();
+      dg.AutoGenerateColumns = true;
+      dg.CanUserAddRows = true;
+      dg.CanUserDeleteRows = true;
+      dg.CanUserResizeColumns= true;
+      dg.GridLinesVisibility = DataGridGridLinesVisibility.All;
+      
+      for (int i = 0; i < 30; i++) {
+        dg.Columns.Insert(dg.Columns.Count, new DataGridTextColumn { Header = $"Колонка{i}" });
+        dg.Items.Add(new DataGrid());
+      }
+
+      DataGridTabControll.Items.Add(new TabItem { Header = new TextBlock { Text = (DataGridTabControll.Items.Count+1).ToString() }, Content = dg});
     }
   }
 }
