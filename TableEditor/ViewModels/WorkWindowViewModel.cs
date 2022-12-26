@@ -15,7 +15,7 @@ using System.Windows.Shapes;
 using TableEditor.Models;
 
 namespace TableEditor.ViewModels {
-    internal class WorkWindowViewModel : Window {
+    abstract class WorkWindowViewModel : Window {
     
 
   }
