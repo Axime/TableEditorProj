@@ -11,6 +11,9 @@
         Background="#1E1E1E"
         ResizeMode="CanResizeWithGrip"
         Title="Table Editor">
+    <Window.DataContext>
+        <local:WorkWindowViewModel/>
+    </Window.DataContext>
     
 
 
@@ -65,7 +68,7 @@
                 </StackPanel>
             </Border>
 
-            <TabControl x:Name="DataGridTabControll" Grid.Row="1" TabStripPlacement="Right" Style="{DynamicResource MaterialDesignTabControl}">
+            <TabControl ItemsSource="{Binding TableListControl, Mode=TwoWay}" x:Name="DataGridTabControll" Grid.Row="1" TabStripPlacement="Right" Style="{DynamicResource MaterialDesignTabControl}">
                 
             </TabControl>
             
@@ -86,7 +89,7 @@
 
                 <StackPanel  x:Name="TableList" Visibility="Visible">
                     <Label Content="Таблицы" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-                    <Button Content="Create table" Click="BCreateTable"></Button>
+                    <Button Command="{Binding CreateTableCommand}" Content="Create table" Click="BCreateTable" />
                 </StackPanel>
 
 
@@ -135,7 +138,7 @@
             </Border.Effect>
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Label x:Name="userNickname" Content="user__nickname" FontSize="15" FontFamily="Consolas" Height="25"/>
+                <Label x:Name="userNickname" Content="{Binding Username}" FontSize="15" FontFamily="Consolas" Height="25"/>
                 <Label x:Name="status_bar" Content="status__bar" FontSize="15" FontFamily="Consolas" Height="26" Margin="100 0 0 0"/>
             </StackPanel>
 
