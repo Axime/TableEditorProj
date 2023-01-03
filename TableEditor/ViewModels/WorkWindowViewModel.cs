@@ -7,6 +7,9 @@ using TableEditor.Models;
 using TableEditor.Views;
 using TableEditor;
 using System.Windows;
+using System;
+using System.Linq;
+using System.Windows.Media;
 
 namespace TableEditor {
   partial class WorkWindowViewModel : NotifyPropertyChanged {
@@ -16,7 +19,7 @@ namespace TableEditor {
 
     private ICommand _createTableCommand;
 
-    private List<TabItem> _tabControl = new();
+    public List<TabItem> _tabControl = new();
     private string _userName;
 
 
@@ -38,20 +41,32 @@ namespace TableEditor {
     public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { CreateTable(); }));
 
     private void CreateTable() {
-      BaseWorkField DataTable = new BaseWorkField("gg");
-      DataGrid DG = new();
+
+      BaseWorkField DataTable = new BaseWorkField($"New Table {TableListControl.Count + 1}");
+
+      DataGrid DG = new() {
+        GridLinesVisibility = DataGridGridLinesVisibility.All,
+        CanUserSortColumns = false,
+        MinColumnWidth = 50,
+      };
 
       Binding bind = new Binding("Data"); bind.Mode = BindingMode.TwoWay;
       bind.Source = DataTable;
 
       BindingOperations.SetBinding(DG, DataGrid.ItemsSourceProperty, bind);
-      
-      TableListControl.Add(new TabItem { Header = new TextBlock { Text = DataTable.TableName }, Content = DG });
+
+      TableListControl.Add(new TabItem { Header = new TextBlock { Text = DataTable.TableName, Foreground = Brushes.White }, Content = DG });
+      TableListControl = TableListControl.ToList();
 
     }
 
 
     public class BaseWorkField : NotifyPropertyChanged {
+      public BaseWorkField(string tablename = "Table") {
+        TableName = tablename;
+        AddColumn(30);
+        AddRow(30);
+      }
 
       private ICommand _addColumnCommand;
       private ICommand _addRowCommand;
@@ -69,6 +84,7 @@ namespace TableEditor {
         get { return _dataTable; }
         set { _dataTable = value; OnPropertyChanged(); }
       }  //контейнер таблицы
+
       public int RowCount {
         get { return _rowCount; }
         set { _rowCount = value; OnPropertyChanged(); }
@@ -115,11 +131,6 @@ namespace TableEditor {
       public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { RemoveColumn(1); }));
       public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { RemoveRow(1); }));
 
-      public BaseWorkField(string tablename = "Table") {
-        TableName = tablename;
-        AddColumn(10);
-        AddRow(20);
-      }
     }
   }
 }
