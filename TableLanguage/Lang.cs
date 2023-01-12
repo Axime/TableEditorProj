@@ -209,6 +209,22 @@ namespace TableLanguage {
 
         public static Reference TypeCast(in Reference obj, RuntimeEntityType type) {
           if (obj.Val?.Type == type) return obj;
+          return type switch {
+            RuntimeEntityType.Boolean => obj.Val switch {
+              NumberConstant num when num.value != 0 && double.IsNaN(num.value) => true,
+              NumberConstant => false,
+              StringConstant str when string.IsNullOrWhiteSpace(str.str) => false,
+              StringConstant => false,
+              Object or NativeFunction or Function => true,
+              Null => false,
+              _ => false
+            },
+            RuntimeEntityType.Number => obj.Val switch {
+              BooleanConstant b when b.value => 1,
+              BooleanConstant => 0,
+              Object or Function or NativeFunction => double.NaN,
+            }
+          };
           throw new NotImplementedException();
         }
 
