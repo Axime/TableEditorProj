@@ -5,9 +5,7 @@ using System.Linq;
 using N = System.Collections.Generic.List<TableLanguage.Lang.Node>;
 using T = System.Collections.Generic.List<TableLanguage.Lang.Token>;
 using R = TableLanguage.Lang.Runtime.IRuntimeEntity;
-using NameEntityDict = System.Collections.Generic.Dictionary<string, TableLanguage.Lang.Runtime.IRuntimeEntity>;
 using NameRefDict = System.Collections.Generic.Dictionary<string, TableLanguage.Lang.Runtime.Reference>;
-using System.Net;
 
 namespace TableLanguage {
   public static class Lang {
@@ -28,13 +26,15 @@ namespace TableLanguage {
         public R? Val { get; set; }
         public bool isConst;
         public bool isRef;
+        public string? propName;
         public RefType type;
         public Reference? owner = null;
-        public Reference(R? value, bool isRef, RefType type, in Reference? owner = null, bool isConst = false) {
+        public Reference(R? value, bool isRef, RefType type, in Reference? owner = null, bool isConst = false, string? propName = null) {
           Val = value;
           this.isRef = isRef;
           this.owner = owner;
           this.type = type;
+          this.propName = propName;
           if (!isRef) {
             this.isConst = true;
             this.type = RefType.rvalue;
@@ -44,7 +44,7 @@ namespace TableLanguage {
           }
         }
         public static implicit operator Reference(bool v) => new(new BooleanConstant(v), false, RefType.rvalue);
-        public static implicit operator Reference(string v) => new(new StringConstant(v), true, RefType.rvalue);
+        public static implicit operator Reference(string v) => new(new StringConstant(v), false, RefType.rvalue);
         public static implicit operator Reference(double v) => new(new NumberConstant(v), false, RefType.rvalue);
       }
 
@@ -82,14 +82,17 @@ namespace TableLanguage {
       }
       public class Object : R {
         public RuntimeEntityType Type => RuntimeEntityType.Object;
-        public NameEntityDict dict = new();
+        public NameRefDict props = new();
+        public Object(NameRefDict props) {
+          this.props = props;
+        }
 
       }
       public class NumberConstant : R {
-        public double v = 0;
+        public double value = 0;
         public RuntimeEntityType Type => RuntimeEntityType.Number;
         public NumberConstant(double v) {
-          this.v = v;
+          this.value = v;
         }
       }
       public class StringConstant : R {
@@ -101,6 +104,7 @@ namespace TableLanguage {
       }
       public class BooleanConstant : R {
         public bool value;
+        public bool Value => value;
         public RuntimeEntityType Type => RuntimeEntityType.Boolean;
         public BooleanConstant(bool value) { this.value = value; }
       }
@@ -142,7 +146,7 @@ namespace TableLanguage {
               left: var left,
               right: var right,
               dotAndIdentifier: var notExecRight
-            } => GetObjectProperty(ExecExpression(left), notExecRight ? new(new StringConstant((left as Nodes.StringNode)!.str), true, Reference.RefType.rvalue) : ExecExpression(right)),
+            } => GetObjectProperty(ExecExpression(left), notExecRight ? new(new StringConstant((right as Nodes.StringNode)!.str), false, Reference.RefType.rvalue) : ExecExpression(right)),
             Statements.BinaryExpression {
               left: var left,
               op: var op,
@@ -152,13 +156,18 @@ namespace TableLanguage {
           };
         }
         private Reference ExecNumber(in Nodes.NumberNode num) => new(new NumberConstant(num.v), false, Reference.RefType.rvalue);
-        private Reference ExecString(in Nodes.StringNode str) => new(new StringConstant(str.str), true, Reference.RefType.rvalue);
+        private Reference ExecString(in Nodes.StringNode str) => new(new StringConstant(str.str), false, Reference.RefType.rvalue);
         private Reference ExecBool(in Nodes.BooleanNode boolean) => new(new BooleanConstant(boolean.value), false, Reference.RefType.rvalue);
         private Reference ExecArray(in Nodes.ArrayNode array) {
           throw new NotImplementedException();
         }
         private Reference ExecObject(in Nodes.ObjectNode obj) {
-          throw new NotImplementedException();
+          NameRefDict props = new();
+          foreach (var (key, value) in obj.props) {
+            props.Add((TypeCast(ExecExpression(key), RuntimeEntityType.String).Val as StringConstant)!.str, ExecExpression(value));
+          }
+          var o = new Object(props);
+          return new Reference(o, true, Reference.RefType.rvalue);
         }
 
         private Reference ExecFunctionCall(in Statements.FunctionCall fc) {
@@ -174,10 +183,13 @@ namespace TableLanguage {
         }
 
         private Reference ExecDeclaration(Statements.DeclarationStatement declaration) {
+          if (vars[0].ContainsKey(declaration.varName)) throw new ReferenceError("Variable with such name already declared in this scope");
           var init = declaration.init == null ? new Reference(new Null(), true, Reference.RefType.lvalue) : ExecExpression(declaration.init);
-          if (declaration.type == Statements.DeclarationStatement.Type.constant)
-            init = new Reference(init.Val, true, Reference.RefType.lvalue, null, true);
-          vars[0].Add(declaration.varName, init);
+          init.isConst = declaration.type == Statements.DeclarationStatement.Type.constant;
+          init.type = Reference.RefType.lvalue;
+          var varValue = ExecBinaryOperator(new(new Null(), true, Reference.RefType.lvalue), init, new(new(0, "=", Tokens[TokenNames.Assignment_operator])));
+          varValue.isConst = init.isConst;
+          vars[0].Add(declaration.varName, varValue);
           return new(new Null(), true, Reference.RefType.rvalue, null, true);
         }
 
@@ -194,14 +206,26 @@ namespace TableLanguage {
         public Reference ExecExpression(in Node node) {
           return ExecNode(node);
         }
+
         public static Reference TypeCast(in Reference obj, RuntimeEntityType type) {
+          if (obj.Val?.Type == type) return obj;
           throw new NotImplementedException();
         }
-        //ExecBinaryOperator(
-        //        TypeCast(GetObjectProperty(name, new Reference(new StringConstant("prototype"), true)), RuntimeEntityType.String),
-        //        new Reference(new StringConstant("String"), false),
-        //        new (new Token(0, "==", Tokens[TokenNames.Eq_operator]))
-        //      ).Val is BooleanConstant b
+
+        public Reference SetObjectProperty(in Reference prop, in Reference value) {
+          var o = prop?.owner?.Val as Object;
+          //if (prop.Val is Null) {
+          value.type = Reference.RefType.lvalue;
+          o.props[prop.propName!] = value;
+          //} else {
+          //  var t = prop.owner;
+          //  prop.owner = null;
+          //  ExecBinaryOperator(prop, value, new(new(0, "=", Tokens[TokenNames.Assignment_operator])));
+          //  prop.owner = t;
+          //}
+          return value;
+        }
+
         public static Reference GetObjectProperty(in Reference obj, in Reference name) {
           // get property name as string
           string? propName = null;
@@ -217,9 +241,9 @@ namespace TableLanguage {
           if (obj.Val is Object) {
             Reference tmp = obj;
             // if current object doesn't have property check it's prototype
-            do if ((tmp.Val as Object)!.dict.TryGetValue(propName, out var value)) return new Reference(value, true, Reference.RefType.lvalue, obj);
-            while ((tmp = GetObjectProperty(obj, new(new StringConstant("prototype"), true, Reference.RefType.rvalue))).Val is not Null);
-            return new Reference(new Null(), true, Reference.RefType.rvalue);
+            do if ((tmp.Val as Object)!.props.TryGetValue(propName, out var value)) return new Reference(value.Val, true, Reference.RefType.lvalue, obj, false, propName);
+            while ((tmp = GetObjectProperty(obj, new(new StringConstant("prototype"), false, Reference.RefType.rvalue, obj, false, "prototype"))).Val is not Null);
+            return new Reference(new Null(), true, Reference.RefType.rvalue, null, true, propName);
           } else if (obj.Val is StringConstant oStr) {
             throw new NotImplementedException();
           } else if (obj.Val is NumberConstant oNum) {
@@ -233,11 +257,12 @@ namespace TableLanguage {
         }
 
 
-        public static Reference ExecUnaryOperator(in Reference left, in Nodes.OperatorNode op) {
+        public Reference ExecUnaryOperator(in Reference left, in Nodes.OperatorNode op) {
           throw new NotImplementedException();
         }
-        public static Reference ExecBinaryOperator(in Reference left, in Reference right, in Nodes.OperatorNode op) {
-          switch (op.text) {
+        public Reference ExecBinaryOperator(in Reference left, in Reference right, in Nodes.OperatorNode op) {
+          var opText = op.text;
+          switch (opText) {
             case "&&": {
               if ((TypeCast(left, RuntimeEntityType.Boolean).Val as BooleanConstant)!.value) return right;
               return left;
@@ -253,14 +278,39 @@ namespace TableLanguage {
               return left.Val == right.Val;
             }
             case "!==": return !(ExecBinaryOperator(left, right, new(new(0, "!==", new("", new(""), Flags.Operator)))).Val as BooleanConstant)!.value;
+
+            case "=": {
+              if (left.owner != null) return SetObjectProperty(left, right);
+              if (left.type == Reference.RefType.rvalue) throw new ReferenceError("Invalid lefthand reference assignment");
+              if (left.isConst) throw new ReferenceError("Cannot assign to const variable");
+              left.Val = right.Val switch {
+                NumberConstant num => new NumberConstant(num.value),
+                BooleanConstant b => new BooleanConstant(b.value),
+                _ => right.Val
+              };
+              left.isRef = right.isRef;
+              return left;
+            }
+            case ",": return right;
             default: break;
 
           }
-          if (left.Val is NumberConstant leftNum && right.Val is NumberConstant rightNum) {
-            var lv = leftNum.v;
-            var rv = rightNum.v;
-            // both are numbers
+          if (left.Val.Type != right.Val.Type) {
+            throw new NotImplementedException();
+          }
+          if (left.Val is StringConstant leftStr && right.Val is StringConstant rightStr) {
+            var lv = leftStr.str;
+            var rv = rightStr.str;
             return op.text switch {
+              "+" => lv + rv,
+            };
+          }
+
+          if (left.Val is NumberConstant leftNum && right.Val is NumberConstant rightNum) {
+            var lv = leftNum.value;
+            var rv = rightNum.value;
+            // both are numbers
+            return opText switch {
               "+" => (Reference)(lv + rv),
               "-" => lv - rv,
               "*" => lv * rv,
@@ -274,12 +324,25 @@ namespace TableLanguage {
               "<" => lv < rv,
               "<=" => lv <= rv,
               ">=" => lv > rv,
+              "==" => lv.CompareTo(rv) == 0,
+              "!=" => lv.CompareTo(rv) != 0,
               _ => throw new ArgumentException("Unknown operator")
             };
-
-
           }
-          throw new Error($"Cannot use operator {op.text} with types: {left.Val.GetType().Name} and {left.Val.GetType().Name}");
+          if (left.Val is BooleanConstant bool1 && right.Val is BooleanConstant bool2) {
+            var lv = bool1.value;
+            var rv = bool2.value;
+            return opText switch {
+              "+" or "-" or "*" or "/" or "**" or "%" or "&" or "|" or "^" or ">" or ">=" or "<=" or "<" => ExecBinaryOperator(
+                TypeCast(left, RuntimeEntityType.Number),
+                TypeCast(right, RuntimeEntityType.Number),
+                op
+                ),
+              "==" => lv == rv,
+              "!=" => lv != rv,
+            };
+          }
+          throw new Error($"Cannot use operator {op.text} with types {left.Val.Type} and {left.Val.Type}");
         }
       }
     }
@@ -298,7 +361,7 @@ namespace TableLanguage {
       public ReferenceError(string msg) : base(msg, "ReferenceError") { }
     }
     public class TypeError : Error {
-      public TypeError(string msg): base(msg, "TypeError") { }
+      public TypeError(string msg) : base(msg, "TypeError") { }
     }
     public abstract class Node {
       public string Name => GetType().Name;
@@ -332,7 +395,15 @@ namespace TableLanguage {
 
       public class MemberAccessStatement : BinaryExpression {
         public bool dotAndIdentifier;
-        public MemberAccessStatement(Nodes.OperatorNode op, Node left, Node right, bool dotAndIdentifier) : base(op, left, right) {
+        public MemberAccessStatement(
+          Nodes.OperatorNode op,
+          Node left,
+          Node right,
+          bool dotAndIdentifier
+          ) : base(
+            op, left,
+            dotAndIdentifier ? new Nodes.StringNode($"\"{(right as Nodes.VariableNode).name}\"") : right
+            ) {
           this.dotAndIdentifier = dotAndIdentifier;
         }
       }
@@ -909,6 +980,7 @@ namespace TableLanguage {
               key = ParsePrimary();
               // Prop name must be string with or without quotation marks
               if (key is not Nodes.StringNode && key is not Nodes.VariableNode) ThrowExpected("property name", false);
+              if (key is Nodes.VariableNode var) key = new Nodes.StringNode($"\"{var.name}\"");
             }
             Expect(TokenNames.Assignment_operator, false, "=");
             MoveToNextToken();
@@ -1222,21 +1294,23 @@ namespace TableLanguage {
         var res = new Runtime.Runner(a, new() {
           new(new() {
             ["Write"] = new(new Runtime.NativeFunction(args => {
-              var val = args[0] ?? new(new Runtime.Null(), true, Runtime.Reference.RefType.rvalue);
-              var str = val.Val switch {
-                Runtime.StringConstant s => $"\"{s.str}\"",
-                Runtime.NumberConstant n => n.v.ToString(),
-                Runtime.BooleanConstant b => b.ToString(),
-                Runtime.Null => "null",
-                Runtime.NativeFunction {Name: var n} => $"function {n}() {{[native code]}}",
-                _ => "Unknown value"
-              };
-              Console.WriteLine(str);
+              foreach (var arg in args) {
+                var str = arg.Val switch {
+                  Runtime.StringConstant s => s.str,
+                  Runtime.NumberConstant n => n.value.ToString(),
+                  Runtime.BooleanConstant b => b.value.ToString(),
+                  Runtime.Null => "null",
+                  Runtime.NativeFunction {Name: var n} => $"function {n}() {{[native code]}}",
+                  _ => "Unknown value"
+                };
+                Console.Write(str);
+              }
+              Console.WriteLine();
               return new(new Runtime.Null(), true, Runtime.Reference.RefType.rvalue);
             }, "Write"), true, Runtime.Reference.RefType.rvalue),
             ["AddOne"] = new(new Runtime.NativeFunction(args => {
               var val = args[0];
-              if (val.Val is Runtime.NumberConstant num) return num.v + 1;
+              if (val.Val is Runtime.NumberConstant num) return num.value + 1;
               throw new TypeError("Illegal type: expected number");
             }, "AddOne"), true, Runtime.Reference.RefType.lvalue)
           })
