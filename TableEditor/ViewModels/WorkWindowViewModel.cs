@@ -4,133 +4,68 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using TableEditor.Models;
-using TableEditor.Views;
 using TableEditor;
 using System.Windows;
 using System;
 using System.Linq;
 using System.Windows.Media;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using static TableEditor.Models.EditorModel;
 
-namespace TableEditor {
-  partial class WorkWindowViewModel : NotifyPropertyChanged {
-    public WorkWindowViewModel() {
-      Username = HTTP.UserNickname;
+namespace TableEditor.VM {
+  public class WorkWindowViewModel : INotifyPropertyChanged {
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    private void OnPropertyChanged([CallerMemberName] string propertyName = "")
+            => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+    #region Секция свойств
+    public string UserName {
+      get => _model.Username;
+      set { _model.Username = value; OnPropertyChanged(); }
     }
+    public ObservableCollection<Table> DataTables {
+      get => _model.Tables;
+      set { _model.Tables = value;}
+    }
+    private string _tableName;
+    private int _selectTableNumber;
+    public string TableName {
+      get => _tableName; set { _tableName = value; OnPropertyChanged(); }
+    }
+    public int SelectTableNumber {
+      get => _selectTableNumber; set { _selectTableNumber = value; OnPropertyChanged(); }
+    }
+    #endregion
 
+    #region Секция команд
     private ICommand _createTableCommand;
 
-    public List<TabItem> _tabControl = new();
-    private string _userName;
+    private ICommand _addColumnCommand;
+    private ICommand _removeColumnCommand;
+    private ICommand _addRowCommand;
+    private ICommand _removeRowCommand;
 
 
-    public List<TabItem> TableListControl {
-      get {
-        return _tabControl;
-      }
-      set {
-        _tabControl = value; OnPropertyChanged();
-      }
-    }
-    public string Username //привязка никнейма
-    {
-      get { return _userName; }
-      set { _userName = value; OnPropertyChanged(); }
-    }
+    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { _model.CreateTable(TableName) ; }));
 
+    public ICommand AddColumnCommand => _addColumnCommand ?? (_addColumnCommand = new RelayCommand(parameter => { _model.AddColumn(SelectTableNumber, 1); }));
+    public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { _model.RemoveColumn(SelectTableNumber, 1); }));
+    public ICommand AddRowCommand => _addRowCommand ?? (_addRowCommand = new RelayCommand(parameter => { _model.AddRow(SelectTableNumber, 1); }));
+    public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { _model.RemoveRow(SelectTableNumber, 1); }));
+    #endregion
 
-    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { CreateTable(); }));
-
-    private void CreateTable() {
-
-      BaseWorkField DataTable = new BaseWorkField($"New Table {TableListControl.Count + 1}");
-
-      DataGrid DG = new() {
-        GridLinesVisibility = DataGridGridLinesVisibility.All,
-        CanUserSortColumns = false,
-        MinColumnWidth = 50,
-      };
-
-      Binding bind = new Binding("Data"); bind.Mode = BindingMode.TwoWay;
-      bind.Source = DataTable;
-
-      BindingOperations.SetBinding(DG, DataGrid.ItemsSourceProperty, bind);
-
-      TableListControl.Add(new TabItem { Header = new TextBlock { Text = DataTable.TableName, Foreground = Brushes.White }, Content = DG });
-      TableListControl = TableListControl.ToList();
-
+    private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+      if (e.PropertyName == "ResultChange")
+        OnPropertyChanged("Result");
     }
 
-
-    public class BaseWorkField : NotifyPropertyChanged {
-      public BaseWorkField(string tablename = "Table") {
-        TableName = tablename;
-        AddColumn(30);
-        AddRow(30);
-      }
-
-      private ICommand _addColumnCommand;
-      private ICommand _addRowCommand;
-      private ICommand _removeColumnCommand;
-      private ICommand _removeRowCommand;
-
-
-      private DataTable _dataTable = new();
-      private int _rowCount;
-      private int _columnCount;
-      private string _tableName;
-
-
-      public DataTable Data {
-        get { return _dataTable; }
-        set { _dataTable = value; OnPropertyChanged(); }
-      }  //контейнер таблицы
-
-      public int RowCount {
-        get { return _rowCount; }
-        set { _rowCount = value; OnPropertyChanged(); }
-      } //привязка колличества строк
-      public int ColumnCount {
-        get { return _columnCount; }
-        set { _columnCount = value; OnPropertyChanged(); }
-      } //привязка колличества столбцов
-      public string TableName {
-        get { return _tableName; }
-        set { _tableName = value; OnPropertyChanged(); }
-      }
-
-
-      private void AddColumn(int num) {
-        for (int i = 0; i <= num; i++) {
-          _dataTable.Columns.Add(new DataColumn(_dataTable.Columns.Count.ToString(), typeof(string)) {
-            AllowDBNull = true
-          });
-        }
-        _dataTable = _dataTable.Copy();
-        ColumnCount = _dataTable.Columns.Count;
-      }
-      private void AddRow(int num) {
-        for (int i = 0; i <= num; i++) _dataTable.Rows.Add();
-        RowCount = _dataTable.Rows.Count;
-      }
-      private void RemoveColumn(int num) {
-        for (int i = 1; i <= num && _dataTable.Columns.Count > 1; i++)
-          _dataTable.Columns.RemoveAt(_dataTable.Columns.Count - 1);
-        Data = _dataTable.Copy();
-        ColumnCount = _dataTable.Columns.Count;
-      }
-      private void RemoveRow(int num) {
-        for (int i = 1; i <= num && _dataTable.Rows.Count > 1; i++)
-          _dataTable.Rows.RemoveAt(_dataTable.Rows.Count - 1);
-        RowCount = _dataTable.Rows.Count;
-      }
-
-
-
-      public ICommand AddColumnCommand => _addColumnCommand ?? (_addColumnCommand = new RelayCommand(parameter => { AddColumn(1); }));
-      public ICommand AddRowCommand => _addRowCommand ?? (_addRowCommand = new RelayCommand(parameter => { AddRow(1); }));
-      public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { RemoveColumn(1); }));
-      public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { RemoveRow(1); }));
-
+    readonly EditorModel _model;
+    public WorkWindowViewModel() {
+      _model = EditorModel.Model;
+      _model.PropertyChanged += Model_PropertyChanged; 
     }
   }
 }

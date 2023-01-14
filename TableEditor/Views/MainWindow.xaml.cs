@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Navigation;
 using TableEditor;
 using TableEditor.Models;
+using TableEditor.VM;
 
 namespace Main {
   public partial class MainWindow : Window {

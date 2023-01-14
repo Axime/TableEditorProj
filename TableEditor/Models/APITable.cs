@@ -5,7 +5,6 @@ using System.Windows.Data;
 
 namespace TableEditor.Models {
   public static class APITable {
-
     public enum Types {
       @int,
       @float,
@@ -14,7 +13,5 @@ namespace TableEditor.Models {
       @string,
       @bool,
     }
-
-    
   }
 }
