@@ -47,7 +47,7 @@ namespace TableEditor.VM {
     #region Секция команд
     private string GetPathToLoad() {
       OpenFileDialog ovd = new OpenFileDialog();
-      ovd.Filter = "Text documents (*.txt)|*.txt|All files (*.*)|*.*";
+      ovd.Filter = "Text documents (*.pspt)|*.pspt";
       Nullable<bool> result = ovd.ShowDialog();
       if (result == true) {
         // Open document
