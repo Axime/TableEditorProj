@@ -13,6 +13,10 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using static TableEditor.Models.EditorModel;
+using Microsoft.Win32;
+using Prism.Services.Dialogs;
+using System.Security.Cryptography.X509Certificates;
+using System.Security.Cryptography;
 
 namespace TableEditor.VM {
   public class WorkWindowViewModel : INotifyPropertyChanged {
@@ -28,7 +32,7 @@ namespace TableEditor.VM {
     }
     public ObservableCollection<Table> DataTables {
       get => _model.Tables;
-      set { _model.Tables = value;}
+      set { _model.Tables = value; }
     }
     private string _tableName;
     private int _selectTableNumber;
@@ -41,7 +45,33 @@ namespace TableEditor.VM {
     #endregion
 
     #region Секция команд
+    private string GetPathToLoad() {
+      OpenFileDialog ovd = new OpenFileDialog();
+      ovd.Filter = "Text documents (*.txt)|*.txt|All files (*.*)|*.*";
+      Nullable<bool> result = ovd.ShowDialog();
+      if (result == true) {
+        // Open document
+        string filename = ovd.FileName;
+        return filename;
+      }
+      return "";
+    }
+    private string GetPathToSave() {
+      SaveFileDialog svd = new SaveFileDialog();
+      svd.Filter = "Text documents (*.txt)|*.txt|All files (*.*)|*.*";
+      Nullable<bool> result = svd.ShowDialog();
+      if (result == true) {
+        // Open document
+        string filename = svd.FileName;
+        return filename;
+      }
+      return "";
+    }
+
+
     private ICommand _createTableCommand;
+    private ICommand _loadTableCommand;
+    private ICommand _saveTableCommand;
 
     private ICommand _addColumnCommand;
     private ICommand _removeColumnCommand;
@@ -49,7 +79,9 @@ namespace TableEditor.VM {
     private ICommand _removeRowCommand;
 
 
-    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { _model.CreateTable(TableName) ; }));
+    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { _model.CreateTable(TableName); }));
+    public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { _model.LoadTable(GetPathToLoad()); }));
+    public ICommand SaveTableCommand => _saveTableCommand ?? (_saveTableCommand = new RelayCommand(parameter => { _model.SaveTable(SelectTableNumber, GetPathToSave()); }));
 
     public ICommand AddColumnCommand => _addColumnCommand ?? (_addColumnCommand = new RelayCommand(parameter => { _model.AddColumn(SelectTableNumber, 1); }));
     public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { _model.RemoveColumn(SelectTableNumber, 1); }));
@@ -65,7 +97,7 @@ namespace TableEditor.VM {
     readonly EditorModel _model;
     public WorkWindowViewModel() {
       _model = EditorModel.Model;
-      _model.PropertyChanged += Model_PropertyChanged; 
+      _model.PropertyChanged += Model_PropertyChanged;
     }
   }
 }

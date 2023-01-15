@@ -25,6 +25,7 @@
             <ColumnDefinition Width="50"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
+        
 
         <Border x:Name="FieldLastFilesTutorialsOther" Grid.Column="1" Grid.RowSpan="2" Visibility="Visible">
 
@@ -96,7 +97,7 @@
 
         </Grid>
 
-        <Border x:Name="FuncFieldBody" Visibility="Visible" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="0" Grid.RowSpan="2">
+        <Border x:Name="FuncFieldBody" Visibility="Visible" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="250" Grid.RowSpan="2">
 
             <Border.Effect>
                 <DropShadowEffect BlurRadius="7" ShadowDepth="1" Color="#FF232323"/>
@@ -110,9 +111,25 @@
 
 
                 <StackPanel  x:Name="TableList" Visibility="Visible">
-                    <Label Content="Таблицы" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-                    <TextBox materialDesign:HintAssist.Hint="Название таблицы" Foreground="WhiteSmoke" HorizontalAlignment="Center" Text="{Binding TableName, Mode=TwoWay}" Margin="5 5 5 5" Width="230"/>
-                    <Button Command="{Binding CreateTableCommand}" CommandParameter="{Binding }" Content="Create table" Click="BCreateTable" Background="#FF2F2F31" BorderBrush="#FF252526" Cursor="Hand"/>
+                    <Label Content="Команды" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
+                    <Button Command="{Binding LoadTableCommand}" Content="Open Table" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="5 5 5 5"/>
+                    <Button Command="{Binding SaveTableCommand}" Content="Save Table" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="5 5 5 5"/>
+                    <TextBox materialDesign:HintAssist.Hint="Название таблицы" Foreground="WhiteSmoke" HorizontalAlignment="Center" Text="{Binding TableName, Mode=TwoWay}" Margin="5 50 5 5" Width="230"/>
+                    <Button Command="{Binding CreateTableCommand}" CommandParameter="{Binding }" Content="Create table" Click="BCreateTable" Background="#FF2F2F31" BorderBrush="#FF252526" Cursor="Hand" Margin="5 5 5 5"/>
+
+                    <StackPanel Margin=" 0 50 0 0" HorizontalAlignment="Stretch" Height="362">
+                        <Label Content="Таблицы" HorizontalAlignment="Center"  VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
+                        <ScrollViewer Height="337">
+                            <ListBox ItemsSource="{Binding LastTables}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Button Content="{Binding Path=Header}" Command="{Binding OpenTable}" CommandParameter="{Binding Path = Location}"/>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+                        </ScrollViewer>
+                    </StackPanel>
+                    
                 </StackPanel>
 
 
@@ -168,7 +185,6 @@
             </StackPanel>
 
         </Border>
-
 
     </Grid>
 </Window>
