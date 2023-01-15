@@ -65,7 +65,7 @@
             </Grid>
         </Border>
 
-        <Grid x:Name="TableMainGrid" Grid.Column="1" Visibility="Collapsed">
+        <Grid x:Name="TableMainGrid" Grid.Column="1" Visibility="Visible">
             <!--This main grid for table workfield-->
             <Grid.RowDefinitions>
                 <RowDefinition Height="79*"/>
@@ -74,10 +74,19 @@
 
             <Border x:Name="TableWorkFlowToolsBody" Background="#FF2B2B2B" Padding="5" Margin="5 5 5 5" CornerRadius="5">
                 <StackPanel HorizontalAlignment="Left" CanHorizontallyScroll="True" Orientation="Horizontal" >
-                    <Button Command="{Binding AddColumnCommand}" Content="+ col" Margin="5"/>
-                    <Button Command="{Binding AddRowCommand}" Content="+ row" Margin="5"/>
-                    <Button Command="{Binding RemoveColumnCommand}" Content="- col" Margin="5"/>
-                    <Button Command="{Binding RemoveRowCommand}" Content="- row" Margin="5"/>
+                    <StackPanel Orientation="Vertical" Margin="10 0 0 0">
+                        <Button Command="{Binding AddColumnCommand}" Content="+ col" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
+                        <Button Command="{Binding AddRowCommand}" Content="+ row" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
+                    </StackPanel>
+                    
+                    <StackPanel Orientation="Vertical" Margin="10 0 0 0">
+                        <Button Command="{Binding RemoveColumnCommand}" Content="- col" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
+                        <Button Command="{Binding RemoveRowCommand}" Content="- row" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
+                    </StackPanel>
+                    
+                    <Button Command="{Binding AddScriptCommand}" Content="+ script" Margin="5" Background="#FF2F2F31" BorderBrush="#FF252526"/>
+                    <Button Command="{Binding RemoveScriptCommand}" Content="- script" Margin="5" Background="#FF2F2F31" BorderBrush="#FF252526"/>
+                    <Button Command="{Binding PlayScriptCommand}" Content="▶" Margin="5" Background="#FF2F2F31" BorderBrush="#FF252526" IsEnabled="{Binding ScriptStatus}"/>
 
                 </StackPanel>
             </Border>
@@ -90,14 +99,14 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid ItemsSource="{Binding Path = Data , Mode=TwoWay}" SelectionMode="Single" GridLinesVisibility="All" MinColumnWidth="80"/>
+                        <DataGrid ItemsSource="{Binding Path = Data , Mode=TwoWay}" SelectionMode="Single" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"/>
                     </DataTemplate>
                 </TabControl.ContentTemplate>
             </TabControl>
 
         </Grid>
 
-        <Border x:Name="FuncFieldBody" Visibility="Visible" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="250" Grid.RowSpan="2">
+        <Border x:Name="FuncFieldBody" Visibility="Visible" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="0" Grid.RowSpan="2">
 
             <Border.Effect>
                 <DropShadowEffect BlurRadius="7" ShadowDepth="1" Color="#FF232323"/>
