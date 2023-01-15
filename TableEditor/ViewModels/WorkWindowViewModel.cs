@@ -58,7 +58,7 @@ namespace TableEditor.VM {
     }
     private string GetPathToSave() {
       SaveFileDialog svd = new SaveFileDialog();
-      svd.Filter = "Text documents (*.txt)|*.txt|All files (*.*)|*.*";
+      svd.Filter = "Text documents (*.pspt)|*.pspt";
       Nullable<bool> result = svd.ShowDialog();
       if (result == true) {
         // Open document
