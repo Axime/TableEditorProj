@@ -23,13 +23,13 @@ namespace TableLanguage {
           rvalue,
           lvalue
         }
-        public R? Val { get; set; }
+        public R Val { get; set; }
         public bool isConst;
         public bool isRef;
         public string? propName;
         public RefType type;
         public Reference? owner = null;
-        public Reference(R? value, bool isRef, RefType type, in Reference? owner = null, bool isConst = false, string? propName = null) {
+        public Reference(R value, bool isRef, RefType type, in Reference? owner = null, bool isConst = false, string? propName = null) {
           Val = value;
           this.isRef = isRef;
           this.owner = owner;
@@ -51,8 +51,8 @@ namespace TableLanguage {
       public interface IRuntimeEntity {
         public RuntimeEntityType Type { get; }
       }
-      interface ICallable : R {
-        public Reference Call(List<Reference> args);
+      public interface ICallable : R {
+        public Reference Call(Runner env, List<Reference> args);
       }
 
       public class Function : ICallable {
@@ -62,7 +62,7 @@ namespace TableLanguage {
         public Function(Statements.FunctionDeclarationStatement func) {
           this.func = func;
         }
-        public Reference Call(List<Reference> args) {
+        public Reference Call(Runner env, List<Reference> args) {
           throw new NotImplementedException();
           //ExecFunction();
         }
@@ -70,12 +70,12 @@ namespace TableLanguage {
       public class NativeFunction : ICallable {
         public RuntimeEntityType Type => RuntimeEntityType.Function;
         public string? Name;
-        public Func<List<Reference>, Reference> func;
-        public NativeFunction(Func<List<Reference>, Reference> func, string? name) {
+        public Func<Runner, List<Reference>, Reference> func;
+        public NativeFunction(Func<Runner, List<Reference>, Reference> func, string? name) {
           this.func = func;
           this.Name = name;
         }
-        public Reference Call(List<Reference> args) => func(args);
+        public Reference Call(Runner env, List<Reference> args) => func(env, args);
       }
       public class Null : R {
         public RuntimeEntityType Type => RuntimeEntityType.Null;
@@ -109,9 +109,19 @@ namespace TableLanguage {
         public BooleanConstant(bool value) { this.value = value; }
       }
       public class Module {
+        static void addOwnerAndPropNames(in Reference obj) {
+          if (obj.Val is not Object o) return;
+          foreach (var (key, value) in o.props) {
+            value.propName = key;
+            value.owner = obj;
+            if (value.Val is Object) addOwnerAndPropNames(value);
+          }
+        }
         public NameRefDict entities;
         public Module(NameRefDict entities) {
           this.entities = entities;
+          foreach (var (_, value) in entities)
+            if (value.Val is Object) addOwnerAndPropNames(value);
         }
       }
       public class Runner {
@@ -170,14 +180,14 @@ namespace TableLanguage {
           return new Reference(o, true, Reference.RefType.rvalue);
         }
 
-        private Reference ExecFunctionCall(in Statements.FunctionCall fc) {
+        internal Reference ExecFunctionCall(in Statements.FunctionCall fc) {
           var func = ExecNode(fc.callee).Val;
           if (func is ICallable f) {
             var args = new List<Reference>();
             foreach (var arg in fc.args) {
               args.Add(ExecExpression(arg));
             }
-            return f.Call(args);
+            return f.Call(this, args);
           }
           throw new ReferenceError("Expression cannot be called");
         }
@@ -193,7 +203,7 @@ namespace TableLanguage {
           return new(new Null(), true, Reference.RefType.rvalue, null, true);
         }
 
-        private Reference GetVarRef(string name) {
+        internal Reference GetVarRef(string name) {
           var var = vars.FindLast((NameRefDict scope) => scope.TryGetValue(name, out var _))?[name];
           if (var == null) return new Reference(new Null(), true, Reference.RefType.lvalue);
           return var;
@@ -223,35 +233,22 @@ namespace TableLanguage {
               BooleanConstant b when b.value => 1,
               BooleanConstant => 0,
               Object or Function or NativeFunction => double.NaN,
-            }
+              _ => throw new NotImplementedException()
+            },
+            _ => throw new NotImplementedException()
           };
-          throw new NotImplementedException();
         }
 
         public Reference SetObjectProperty(in Reference prop, in Reference value) {
-          var o = prop?.owner?.Val as Object;
-          //if (prop.Val is Null) {
+          if (prop?.owner?.Val is not Object o) throw new TypeError();
           value.type = Reference.RefType.lvalue;
           o.props[prop.propName!] = value;
-          //} else {
-          //  var t = prop.owner;
-          //  prop.owner = null;
-          //  ExecBinaryOperator(prop, value, new(new(0, "=", Tokens[TokenNames.Assignment_operator])));
-          //  prop.owner = t;
-          //}
           return value;
         }
 
         public static Reference GetObjectProperty(in Reference obj, in Reference name) {
           // get property name as string
-          string? propName = null;
-          if (name.Val is StringConstant str) {
-            // if already string
-            propName = str.str;
-          } else if (name.Val is Object) {
-            // cast to string if not string
-            propName = (TypeCast(name, RuntimeEntityType.String).Val as StringConstant)!.str;
-          }
+          string propName = (TypeCast(name, RuntimeEntityType.String).Val as StringConstant)!.str;
           if (propName == null) throw new ReferenceError("Cannot cast property name to \"string\"");
           if (obj.Val == null) throw new ReferenceError("Cannot read property of null");
           if (obj.Val is Object) {
@@ -294,7 +291,6 @@ namespace TableLanguage {
               return left.Val == right.Val;
             }
             case "!==": return !(ExecBinaryOperator(left, right, new(new(0, "!==", new("", new(""), Flags.Operator)))).Val as BooleanConstant)!.value;
-
             case "=": {
               if (left.owner != null) return SetObjectProperty(left, right);
               if (left.type == Reference.RefType.rvalue) throw new ReferenceError("Invalid lefthand reference assignment");
@@ -374,10 +370,10 @@ namespace TableLanguage {
       }
     }
     public class ReferenceError : Error {
-      public ReferenceError(string msg) : base(msg, "ReferenceError") { }
+      public ReferenceError(string msg = "") : base(msg, "ReferenceError") { }
     }
     public class TypeError : Error {
-      public TypeError(string msg) : base(msg, "TypeError") { }
+      public TypeError(string msg = "") : base(msg, "TypeError") { }
     }
     public abstract class Node {
       public string Name => GetType().Name;
@@ -418,7 +414,7 @@ namespace TableLanguage {
           bool dotAndIdentifier
           ) : base(
             op, left,
-            dotAndIdentifier ? new Nodes.StringNode($"\"{(right as Nodes.VariableNode).name}\"") : right
+            dotAndIdentifier ? new Nodes.StringNode($"\"{(right as Nodes.VariableNode)!.name}\"") : right
             ) {
           this.dotAndIdentifier = dotAndIdentifier;
         }
@@ -1309,26 +1305,35 @@ namespace TableLanguage {
         var a = Parser.Parse(t);
         var res = new Runtime.Runner(a, new() {
           new(new() {
-            ["Write"] = new(new Runtime.NativeFunction(args => {
-              foreach (var arg in args) {
-                var str = arg.Val switch {
-                  Runtime.StringConstant s => s.str,
-                  Runtime.NumberConstant n => n.value.ToString(),
-                  Runtime.BooleanConstant b => b.value.ToString(),
-                  Runtime.Null => "null",
-                  Runtime.NativeFunction {Name: var n} => $"function {n}() {{[native code]}}",
-                  _ => "Unknown value"
-                };
-                Console.Write(str);
-              }
-              Console.WriteLine();
-              return new(new Runtime.Null(), true, Runtime.Reference.RefType.rvalue);
-            }, "Write"), true, Runtime.Reference.RefType.rvalue),
-            ["AddOne"] = new(new Runtime.NativeFunction(args => {
+            ["AddOne"] = new(new Runtime.NativeFunction((env, args) => {
               var val = args[0];
-              if (val.Val is Runtime.NumberConstant num) return num.value + 1;
+              if (val.Val is Runtime.NumberConstant num) {
+                var console = env.GetVarRef("console");
+                var logRef = Runtime.Runner.GetObjectProperty(console, "log");
+                if (logRef.Val is Runtime.ICallable log) {
+                  log.Call(env, new() { "before: ", num.value, "\n after: ", num.value + 1 });
+                }
+                return num.value + 1;
+              }
               throw new TypeError("Illegal type: expected number");
-            }, "AddOne"), true, Runtime.Reference.RefType.lvalue)
+            }, "AddOne"), true, Runtime.Reference.RefType.lvalue),
+            ["console"] = new(new Runtime.Object(new() {
+              ["log"] = new(new Runtime.NativeFunction((env, args) => {
+                foreach (var arg in args) {
+                  var str = arg.Val switch {
+                    Runtime.StringConstant s => s.str,
+                    Runtime.NumberConstant n => n.value.ToString(),
+                    Runtime.BooleanConstant b => b.value.ToString(),
+                    Runtime.Null => "null",
+                    Runtime.NativeFunction {Name: var n} => $"function {n ?? ""}() {{ [native code] }}",
+                    _ => "Unknown value"
+                  };
+                  Console.Write(str);
+                }
+                Console.WriteLine();
+                return new(new Runtime.Null(), true, Runtime.Reference.RefType.rvalue);
+              }, "log"), true, Runtime.Reference.RefType.lvalue)
+            }), true, Runtime.Reference.RefType.lvalue)
           })
         });
         return 0;
