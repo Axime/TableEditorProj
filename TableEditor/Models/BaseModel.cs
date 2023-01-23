@@ -6,6 +6,7 @@ using System.Data.Common;
 using System.IO;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
+using TableEditor.ViewModels;
 
 namespace TableEditor.Models {
   public class EditorModel : INotifyPropertyChanged {
@@ -40,10 +41,10 @@ namespace TableEditor.Models {
     }
 
     #region Методы для работы с файлами
-    public void CreateTable(string tableName, int column = 30, int row = 30) {
+    public DataTable CreateTable(string tableName, int column = 30, int row = 30) {
       if (tableName == "") tableName = $"New Table {Tables.Count.ToString()}";
-      Table table = new(column, row) { Header = tableName };
-      Tables.Add(table);
+      DataTable _table = new DataTable();
+      return _table;
     }
     public void SaveTable(int tableNumber, string path) {
       try {
@@ -59,6 +60,9 @@ namespace TableEditor.Models {
       Tables.Add(data);
 
       }catch (Exception ex) { Console.WriteLine(ex.Message); }
+    }
+    public void CloseTable(int tableNumber) {
+      Tables.Remove(Tables[tableNumber]);
     }
     
     #endregion
@@ -92,6 +96,14 @@ namespace TableEditor.Models {
     }
 
     public void SetCellContent(int tableNumber, int column, int row, string content) => Tables[tableNumber].Data.Rows[row][column] = content;
+    #endregion
+
+    #region Tools
+    public void Bench(int tableNumber) {
+      for (int i = 0; i < Tables[i].Data.Rows.Count; i++) {
+        SetCellContent(tableNumber, 1, i, i.ToString());
+      }
+    }
     #endregion
 
 

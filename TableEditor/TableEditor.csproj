@@ -41,8 +41,4 @@
     <Resource Include="icons\standart_user_icon.png" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Experiments\" />
-  </ItemGroup>
-
 </Project>

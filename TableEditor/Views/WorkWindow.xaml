@@ -25,7 +25,7 @@
             <ColumnDefinition Width="50"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-        
+
 
         <Border x:Name="FieldLastFilesTutorialsOther" Grid.Column="1" Grid.RowSpan="2" Visibility="Visible">
 
@@ -78,28 +78,36 @@
                         <Button Command="{Binding AddColumnCommand}" Content="+ col" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                         <Button Command="{Binding AddRowCommand}" Content="+ row" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                     </StackPanel>
-                    
+
                     <StackPanel Orientation="Vertical" Margin="10 0 0 0">
                         <Button Command="{Binding RemoveColumnCommand}" Content="- col" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                         <Button Command="{Binding RemoveRowCommand}" Content="- row" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                     </StackPanel>
                     
-                    <Button Command="{Binding AddScriptCommand}" Content="+ script" Margin="5" Background="#FF2F2F31" BorderBrush="#FF252526"/>
-                    <Button Command="{Binding RemoveScriptCommand}" Content="- script" Margin="5" Background="#FF2F2F31" BorderBrush="#FF252526"/>
-                    <Button Command="{Binding PlayScriptCommand}" Content="▶" Margin="5" Background="#FF2F2F31" BorderBrush="#FF252526" IsEnabled="{Binding ScriptStatus}"/>
-
                 </StackPanel>
             </Border>
 
-            <TabControl ItemsSource="{Binding DataTables, Mode=TwoWay}" x:Uid="DataGridTabControll" Grid.Row="1" TabStripPlacement="Right" Style="{DynamicResource MaterialDesignTabControl}" SelectedIndex="{Binding SelectTableNumber}" Margin="5">
+            <TabControl x:Name="TabContr" ItemsSource="{Binding DataTables, Mode=TwoWay}" Grid.Row="1" TabStripPlacement="Right" Style="{DynamicResource MaterialDesignTabControl}" SelectedIndex="{Binding SelectTableNumber}" Margin="5">
                 <TabControl.ItemTemplate>
                     <DataTemplate>
-                        <TextBlock Text="{Binding Path=Header, UpdateSourceTrigger=PropertyChanged}" Foreground="WhiteSmoke" HorizontalAlignment="Left"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="{Binding Path=Title}" Foreground="WhiteSmoke" HorizontalAlignment="Left"/>
+                        </StackPanel>
                     </DataTemplate>
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid ItemsSource="{Binding Path = Data , Mode=TwoWay}" SelectionMode="Single" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True"/>
+                        <DataGrid ItemsSource="{Binding Path=Table, Mode=TwoWay}" SelectionMode="Single" SelectionUnit="Cell" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True">
+                            <DataGrid.CellStyle>
+                                <Style TargetType="DataGridCell" >
+                                    <Style.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="LightGreen"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGrid.CellStyle>
+                        </DataGrid>
                     </DataTemplate>
                 </TabControl.ContentTemplate>
             </TabControl>
@@ -128,17 +136,8 @@
 
                     <StackPanel Margin=" 0 50 0 0" HorizontalAlignment="Stretch" Height="362">
                         <Label Content="Таблицы" HorizontalAlignment="Center"  VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-                        <ScrollViewer Height="337">
-                            <ListBox ItemsSource="{Binding LastTables}">
-                                <ListBox.ItemTemplate>
-                                    <DataTemplate>
-                                        <Button Content="{Binding Path=Header}" Command="{Binding OpenTable}" CommandParameter="{Binding Path = Location}"/>
-                                    </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
-                        </ScrollViewer>
                     </StackPanel>
-                    
+
                 </StackPanel>
 
 

@@ -1,22 +1,13 @@
-﻿using System.Collections.Generic;
-using System.Data;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Input;
-using TableEditor.Models;
-using TableEditor;
-using System.Windows;
+﻿using Microsoft.Win32;
+using Newtonsoft.Json;
 using System;
-using System.Linq;
-using System.Windows.Media;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.CompilerServices;
-using static TableEditor.Models.EditorModel;
-using Microsoft.Win32;
-using Prism.Services.Dialogs;
-using System.Security.Cryptography.X509Certificates;
-using System.Security.Cryptography;
+using System.Windows.Input;
+using TableEditor.Models;
+using TableEditor.ViewModels;
 
 namespace TableEditor.VM {
   public class WorkWindowViewModel : INotifyPropertyChanged {
@@ -30,10 +21,13 @@ namespace TableEditor.VM {
       get => _model.Username;
       set { _model.Username = value; OnPropertyChanged(); }
     }
-    public ObservableCollection<Table> DataTables {
-      get => _model.Tables;
-      set { _model.Tables = value; }
+
+    private ObservableCollection<TableViewModel> _dataTables;
+    public ObservableCollection<TableViewModel> DataTables {
+      get => _dataTables;
+      set { _dataTables = value; OnPropertyChanged(); }
     }
+
     private string _tableName;
     private int _selectTableNumber;
     public string TableName {
@@ -72,6 +66,8 @@ namespace TableEditor.VM {
     private ICommand _createTableCommand;
     private ICommand _loadTableCommand;
     private ICommand _saveTableCommand;
+    private ICommand _closeTableCommand;
+
 
     private ICommand _addColumnCommand;
     private ICommand _removeColumnCommand;
@@ -79,9 +75,10 @@ namespace TableEditor.VM {
     private ICommand _removeRowCommand;
 
 
-    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { _model.CreateTable(TableName); }));
+    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { CreateTable(); }));
     public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { _model.LoadTable(GetPathToLoad()); }));
     public ICommand SaveTableCommand => _saveTableCommand ?? (_saveTableCommand = new RelayCommand(parameter => { _model.SaveTable(SelectTableNumber, GetPathToSave()); }));
+
 
     public ICommand AddColumnCommand => _addColumnCommand ?? (_addColumnCommand = new RelayCommand(parameter => { _model.AddColumn(SelectTableNumber, 1); }));
     public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { _model.RemoveColumn(SelectTableNumber, 1); }));
@@ -89,13 +86,30 @@ namespace TableEditor.VM {
     public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { _model.RemoveRow(SelectTableNumber, 1); }));
     #endregion
 
+    #region private methods
+    private void CreateTable() {
+      TableViewModel table = new TableViewModel(TableName);
+      DataTables.Add(table);
+    }
+    private void LoadTable(string path) {
+      try {
+        if (!File.Exists(path) || path == "") return;
+        var data = JsonConvert.DeserializeObject<TableViewModel>(File.ReadAllText(path));
+        DataTables.Add(data);
+
+      } catch (Exception ex) { Console.WriteLine(ex.Message); }
+    }
+    private void CloseTable(int tableNumber) => DataTables.Remove(DataTables[tableNumber]);
+
+    #endregion
+
     private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       if (e.PropertyName == "ResultChange")
         OnPropertyChanged("Result");
     }
-
     readonly EditorModel _model;
     public WorkWindowViewModel() {
+      DataTables = new ObservableCollection<TableViewModel>();
       _model = EditorModel.Model;
       _model.PropertyChanged += Model_PropertyChanged;
     }
