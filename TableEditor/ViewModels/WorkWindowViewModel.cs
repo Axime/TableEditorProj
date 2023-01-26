@@ -108,10 +108,6 @@ namespace TableEditor.VM {
     #endregion
 
     #region Работа с файлами
-    private void CreateTable() {
-      TableViewModel table = new TableViewModel(TableName);
-      DataTables.Add(table);
-    }
     private void LoadTable(string path) {
       try {
         if (!File.Exists(path) || path == "") return;
@@ -127,51 +123,60 @@ namespace TableEditor.VM {
       } catch (Exception ex) { Console.WriteLine(ex.Message); }
     }
     private void CloseTable(int tableNumber) {
-      try { DataTables.Remove(DataTables[tableNumber]); } 
-      catch (Exception ex) { Console.WriteLine(ex.Message); }}
-      #endregion
+      try { DataTables.Remove(DataTables[tableNumber]); } catch (Exception ex) { Console.WriteLine(ex.Message); }
+    }
+    #endregion
 
-      #region Работа с таблицами
-      public void AddColumn(int coumn) {
-        DataTables[SelectTableNumber].AddColumn(coumn);
-        OnPropertyChanged();
-      }
-      public void RemoveColumn(int count) => DataTables[SelectTableNumber].RemoveColumn(count);
-      public void AddRow(int count) => DataTables[SelectTableNumber].AddRow(count);
-      public void RemoveRow(int count) => DataTables[SelectTableNumber].RemoveRow(count);
+    #region Работа с таблицами
+    private void CreateTable() {
+      TableViewModel table = new TableViewModel(TableName);
+      DataTables.Add(table);
+    }
+    public void AddColumn(int coumn) {
+      DataTables[SelectTableNumber].AddColumn(coumn);
+      OnPropertyChanged();
+    }
+    public void RemoveColumn(int count) => DataTables[SelectTableNumber].RemoveColumn(count);
+    public void AddRow(int count) => DataTables[SelectTableNumber].AddRow(count);
+    public void RemoveRow(int count) => DataTables[SelectTableNumber].RemoveRow(count);
 
-      public string GetCellContent(int column, int row) {
-        string content = DataTables[SelectTableNumber].Table.Rows[row][column].ToString();
-        return content;
+    public string GetCellContent(int column, int row) {
+      string content = DataTables[SelectTableNumber].Table.Rows[row][column].ToString();
+      return content;
+    }
+    public string[] GetColumnContent(int column) {
+      string[] columnContent = new string[DataTables[SelectTableNumber].Table.Rows.Count];
+      for (int i = 0; i < DataTables[SelectTableNumber].Table.Rows.Count; i++) {
+        columnContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[i][column]);
       }
-      public string[] GetColumnContent(int column) {
-        string[] columnContent = new string[DataTables[SelectTableNumber].Table.Rows.Count];
-        for (int i = 0; i < DataTables[SelectTableNumber].Table.Rows.Count; i++) {
-          columnContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[i][column]);
-        }
-        return columnContent;
+      return columnContent;
+    }
+    public string[] GetRowContent(int rowNumber) {
+      string[] rowContent = new string[DataTables[SelectTableNumber].Table.Columns.Count];
+      for (int i = 0; i < DataTables[SelectTableNumber].Table.Columns.Count; i++) {
+        rowContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[rowNumber][i]);
       }
-      public string[] GetRowContent(int rowNumber) {
-        string[] rowContent = new string[DataTables[SelectTableNumber].Table.Columns.Count];
-        for (int i = 0; i < DataTables[SelectTableNumber].Table.Columns.Count; i++) {
-          rowContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[rowNumber][i]);
-        }
-        return rowContent;
-      }
+      return rowContent;
+    }
 
-      public void SetCellContent(int column, int row, string content) => DataTables[SelectTableNumber].Table.Rows[row][column] = content;
+    public void SetCellContent(int column, int row, string content) => DataTables[SelectTableNumber].Table.Rows[row][column] = content;
 
-      #endregion
+    #endregion
 
-      private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-        if (e.PropertyName == "ResultChange")
-          OnPropertyChanged("Result");
-      }
-      readonly EditorModel _model;
-      public WorkWindowViewModel() {
-        DataTables = new ObservableCollection<TableViewModel>();
-        _model = EditorModel.Model;
-        _model.PropertyChanged += Model_PropertyChanged;
-      }
+    #region singleton
+    static WorkWindowViewModel _modelv;
+    public static WorkWindowViewModel ModelV => _modelv ?? (_modelv = new WorkWindowViewModel());
+    #endregion
+
+    private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+      if (e.PropertyName == "ResultChange")
+        OnPropertyChanged("Result");
+    }
+    readonly EditorModel _model;
+    public WorkWindowViewModel() {
+      DataTables = new ObservableCollection<TableViewModel>();
+      _model = EditorModel.Model;
+      _model.PropertyChanged += Model_PropertyChanged;
     }
   }
+}

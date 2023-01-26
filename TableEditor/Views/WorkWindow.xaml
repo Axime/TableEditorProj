@@ -98,7 +98,7 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid ItemsSource="{Binding Path=Table, Mode=TwoWay}" SelectionMode="Single" SelectionUnit="Cell" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" CellEditEnding="DataGrid_CellEditEnding">
+                        <DataGrid ItemsSource="{Binding Path=Table, Mode=TwoWay}" SelectionMode="Single" SelectionUnit="Cell" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" CellEditEnding="DataGrid_CellEditEnding" PreparingCellForEdit="DataGrid_PreparingCellForEdit">
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell" >
                                     <Style.Triggers>
