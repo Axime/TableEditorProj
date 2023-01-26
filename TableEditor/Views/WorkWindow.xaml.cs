@@ -42,5 +42,9 @@ namespace TableEditor {
     private void ListBox_Scroll(object sender, System.Windows.Controls.Primitives.ScrollEventArgs e) {
 
     }
+
+    private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
+
+    }
   }
 }

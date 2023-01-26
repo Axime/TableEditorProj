@@ -3,8 +3,10 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Data;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Windows;
 using System.Windows.Input;
 using TableEditor.Models;
 using TableEditor.ViewModels;
@@ -28,13 +30,23 @@ namespace TableEditor.VM {
       set { _dataTables = value; OnPropertyChanged(); }
     }
 
-    private string _tableName;
+    private string _tableName = "Новая таблица";
     private int _selectTableNumber;
+    private Visibility _tabControlVisStatus = Visibility.Hidden;
     public string TableName {
       get => _tableName; set { _tableName = value; OnPropertyChanged(); }
     }
     public int SelectTableNumber {
       get => _selectTableNumber; set { _selectTableNumber = value; OnPropertyChanged(); }
+    }
+    public Visibility TabControlVisStatus {
+      get {
+        if (DataTables.Count != 0) return Visibility.Visible;
+        return Visibility.Collapsed;
+      }
+      private set {
+        _tabControlVisStatus = value;
+      }
     }
     #endregion
 
@@ -75,18 +87,27 @@ namespace TableEditor.VM {
     private ICommand _removeRowCommand;
 
 
-    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { CreateTable(); }));
-    public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { _model.LoadTable(GetPathToLoad()); }));
-    public ICommand SaveTableCommand => _saveTableCommand ?? (_saveTableCommand = new RelayCommand(parameter => { _model.SaveTable(SelectTableNumber, GetPathToSave()); }));
+    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => {
+      CreateTable();
+      if (DataTables.Count > 0) TabControlVisStatus = Visibility.Visible;
+      else TabControlVisStatus = Visibility.Collapsed;
+    }));
+    public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { LoadTable(GetPathToLoad()); }));
+    public ICommand SaveTableCommand => _saveTableCommand ?? (_saveTableCommand = new RelayCommand(parameter => { SaveTable(GetPathToSave()); }));
+    public ICommand CloseTableCommand => _closeTableCommand ?? (_closeTableCommand = new RelayCommand(parameter => {
+      CloseTable(SelectTableNumber);
+      if (DataTables.Count > 0) TabControlVisStatus = Visibility.Visible;
+      else TabControlVisStatus = Visibility.Collapsed;
+    }));
 
 
-    public ICommand AddColumnCommand => _addColumnCommand ?? (_addColumnCommand = new RelayCommand(parameter => { _model.AddColumn(SelectTableNumber, 1); }));
-    public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { _model.RemoveColumn(SelectTableNumber, 1); }));
-    public ICommand AddRowCommand => _addRowCommand ?? (_addRowCommand = new RelayCommand(parameter => { _model.AddRow(SelectTableNumber, 1); }));
-    public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { _model.RemoveRow(SelectTableNumber, 1); }));
+    public ICommand AddColumnCommand => _addColumnCommand ?? (_addColumnCommand = new RelayCommand(parameter => { AddColumn(1); }));
+    public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { RemoveColumn(1); }));
+    public ICommand AddRowCommand => _addRowCommand ?? (_addRowCommand = new RelayCommand(parameter => { AddRow(1); }));
+    public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { RemoveRow(1); }));
     #endregion
 
-    #region private methods
+    #region Работа с файлами
     private void CreateTable() {
       TableViewModel table = new TableViewModel(TableName);
       DataTables.Add(table);
@@ -96,22 +117,61 @@ namespace TableEditor.VM {
         if (!File.Exists(path) || path == "") return;
         var data = JsonConvert.DeserializeObject<TableViewModel>(File.ReadAllText(path));
         DataTables.Add(data);
-
       } catch (Exception ex) { Console.WriteLine(ex.Message); }
     }
-    private void CloseTable(int tableNumber) => DataTables.Remove(DataTables[tableNumber]);
-
-    #endregion
-
-    private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {
-      if (e.PropertyName == "ResultChange")
-        OnPropertyChanged("Result");
+    private void SaveTable(string path) {
+      try {
+        TableViewModel toSave = DataTables[SelectTableNumber];
+        string jsonData = JsonConvert.SerializeObject(toSave);
+        File.WriteAllText(path, jsonData);
+      } catch (Exception ex) { Console.WriteLine(ex.Message); }
     }
-    readonly EditorModel _model;
-    public WorkWindowViewModel() {
-      DataTables = new ObservableCollection<TableViewModel>();
-      _model = EditorModel.Model;
-      _model.PropertyChanged += Model_PropertyChanged;
+    private void CloseTable(int tableNumber) {
+      try { DataTables.Remove(DataTables[tableNumber]); } 
+      catch (Exception ex) { Console.WriteLine(ex.Message); }}
+      #endregion
+
+      #region Работа с таблицами
+      public void AddColumn(int coumn) {
+        DataTables[SelectTableNumber].AddColumn(coumn);
+        OnPropertyChanged();
+      }
+      public void RemoveColumn(int count) => DataTables[SelectTableNumber].RemoveColumn(count);
+      public void AddRow(int count) => DataTables[SelectTableNumber].AddRow(count);
+      public void RemoveRow(int count) => DataTables[SelectTableNumber].RemoveRow(count);
+
+      public string GetCellContent(int column, int row) {
+        string content = DataTables[SelectTableNumber].Table.Rows[row][column].ToString();
+        return content;
+      }
+      public string[] GetColumnContent(int column) {
+        string[] columnContent = new string[DataTables[SelectTableNumber].Table.Rows.Count];
+        for (int i = 0; i < DataTables[SelectTableNumber].Table.Rows.Count; i++) {
+          columnContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[i][column]);
+        }
+        return columnContent;
+      }
+      public string[] GetRowContent(int rowNumber) {
+        string[] rowContent = new string[DataTables[SelectTableNumber].Table.Columns.Count];
+        for (int i = 0; i < DataTables[SelectTableNumber].Table.Columns.Count; i++) {
+          rowContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[rowNumber][i]);
+        }
+        return rowContent;
+      }
+
+      public void SetCellContent(int column, int row, string content) => DataTables[SelectTableNumber].Table.Rows[row][column] = content;
+
+      #endregion
+
+      private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {
+        if (e.PropertyName == "ResultChange")
+          OnPropertyChanged("Result");
+      }
+      readonly EditorModel _model;
+      public WorkWindowViewModel() {
+        DataTables = new ObservableCollection<TableViewModel>();
+        _model = EditorModel.Model;
+        _model.PropertyChanged += Model_PropertyChanged;
+      }
     }
   }
-}

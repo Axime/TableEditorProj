@@ -65,7 +65,7 @@
             </Grid>
         </Border>
 
-        <Grid x:Name="TableMainGrid" Grid.Column="1" Visibility="Visible">
+        <Grid x:Name="TableMainGrid" Grid.Column="1" Visibility="{Binding TabControlVisStatus, Mode=OneWay}">
             <!--This main grid for table workfield-->
             <Grid.RowDefinitions>
                 <RowDefinition Height="79*"/>
@@ -83,7 +83,8 @@
                         <Button Command="{Binding RemoveColumnCommand}" Content="- col" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                         <Button Command="{Binding RemoveRowCommand}" Content="- row" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                     </StackPanel>
-                    
+                    <Button Command="{Binding CloseTableCommand}" Content="- table" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
+
                 </StackPanel>
             </Border>
 
@@ -97,7 +98,7 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid ItemsSource="{Binding Path=Table, Mode=TwoWay}" SelectionMode="Single" SelectionUnit="Cell" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True">
+                        <DataGrid ItemsSource="{Binding Path=Table, Mode=TwoWay}" SelectionMode="Single" SelectionUnit="Cell" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" CellEditEnding="DataGrid_CellEditEnding">
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell" >
                                     <Style.Triggers>

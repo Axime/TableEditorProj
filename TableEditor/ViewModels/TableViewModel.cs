@@ -48,7 +48,8 @@ namespace TableEditor.ViewModels {
       for (int i = 0; i < count; i++) Table.Rows.Add();
     }
     public void RemoveRow(int count) {
-
+      for (int i = 1; i <= count && Table.Rows.Count > 1; i++)
+        Table.Rows.RemoveAt(Table.Rows.Count - 1);
     }
     public string GetCellContent(int column, int row) {
       string content = Table.Rows[row][column].ToString();
