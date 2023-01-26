@@ -163,6 +163,11 @@ namespace TableEditor.VM {
 
     #endregion
 
+    #region singleton
+    static WorkWindowViewModel _modelv;
+    public static WorkWindowViewModel ModelV => _modelv ?? (_modelv = new WorkWindowViewModel());
+    #endregion
+
     private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {
       if (e.PropertyName == "ResultChange")
         OnPropertyChanged("Result");
