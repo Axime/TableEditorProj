@@ -16,7 +16,7 @@ namespace TableEditor.Models
             get => _userToken;
             set => _userToken = value;
         }
-        private static string _userNickname = "undefined";
+        private static string? _userNickname;
         public static string UserNickname
         {
             get => _userNickname;

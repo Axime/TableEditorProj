@@ -5,6 +5,7 @@ using System.Windows.Media;
 using System.Windows.Navigation;
 using TableEditor;
 using TableEditor.Models;
+using TableEditor.VM;
 
 namespace Main {
   public partial class MainWindow : Window {
@@ -84,19 +85,10 @@ namespace Main {
           WorkWindow workWindow = new WorkWindow();
           workWindow.Show();
           this.Close();
-
         });
       } catch (Exception e) {
         Console.WriteLine(e.ToString());
         ErrorField.Text = "Неправильный логин или пароль";
-      }
-    }
-
-    async void AuthUserWithTiken() {
-      try {
-
-      } catch {
-
       }
     }
 
@@ -125,18 +117,6 @@ namespace Main {
       field1.ToolTip = "Correct";
       field1.Foreground = Brushes.White;
       return true;
-    }
-
-    bool CheckValidToken() {
-      return true;
-    }
-
-    async void SendUserAvatar() {
-
-    }
-
-    void SaveUserPreferences() {
-
     }
   }
 }
