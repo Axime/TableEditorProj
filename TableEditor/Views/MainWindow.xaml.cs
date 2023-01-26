@@ -48,7 +48,14 @@ namespace Main {
     async void RegistrationUser(Method.Auth.RegistrationModel.Request user) {
 
       try {
+#if NO_SERVER
+        Method.MethodResponse<
+          HTTP.APIResponse<Method.Auth.RegistrationModel.Response>,
+          Method.Auth.RegistrationModel.Response
+        > response = new(new() { error = null, errorDescription = null, ok = true, response = new() { success = true} });
+#else
         var response = await Method.Call(Method.Auth.Registration, user);
+#endif
         response.IfOk(res => {
           ErrorField.Text = "Регистрация прошла успешно!";
         }).IfError(err => {
@@ -63,7 +70,14 @@ namespace Main {
 
     async void AuthUser(Method.Auth.LoginModel.Request data) {
       try {
+#if NO_SERVER
+        Method.MethodResponse<
+          HTTP.APIResponse<Method.Auth.LoginModel.Response>,
+          Method.Auth.LoginModel.Response
+        > response = new(new() {error = null, errorDescription = null, ok = true, response = new() { accessType = 0, token = ""} });
+#else
         var response = await Method.Call(Method.Auth.Login, data);
+#endif
         Console.WriteLine(response);
         response.IfOk(res => {
           HTTP.UserNickname = LoginField.Text;
