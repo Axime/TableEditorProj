@@ -47,6 +47,12 @@ namespace TableEditor {
 
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
       WorkWindowViewModel vmodel = WorkWindowViewModel.ModelV;
+      for (int i = 0; i < vmodel.DataTables[vmodel.SelectTableNumber].Table.Rows.Count; i++) {
+        for (int j = 0; j < vmodel.DataTables[vmodel.SelectTableNumber].Table.Columns.Count; j++) {
+          if (vmodel.DataTables[vmodel.SelectTableNumber].GetCellFormula(j, i) == null) return;
+          API
+        }
+      }
     }
 
     private void DataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e) {
