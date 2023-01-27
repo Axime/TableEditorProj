@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,11 +19,16 @@ namespace TableEditor.ViewModels {
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     private DataTable _table = new();
+    private DataTable _formulsTable = new();
     private string _title;
     private Cell _currentCell;
     public DataTable Table {
       get => _table;
       set => _table = value;
+    }
+    public DataTable FormulsTable {
+      get => _formulsTable;
+      set => _formulsTable = value;
     }
     public string Title {
       get => _title;
@@ -53,6 +59,11 @@ namespace TableEditor.ViewModels {
     }
     public string GetCellContent(int column, int row) {
       string content = Table.Rows[row][column].ToString();
+      return content;
+    }
+    public string GetCellFormula (int column, int row) {
+      if (FormulsTable.Rows[row][column].ToString() == "") return null;
+      var content = FormulsTable.Rows[row][column].ToString();
       return content;
     }
     public string[] GetColumnContent(int column) {

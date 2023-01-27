@@ -10,7 +10,6 @@ using TableEditor.VM;
 
 namespace TableEditor {
   public partial class WorkWindow : Window {
-    private float _funcFieldWeight;
     public WorkWindow() {
       InitializeComponent();
     }
