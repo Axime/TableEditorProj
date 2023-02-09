@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IO;
+using System.Net;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -82,6 +84,7 @@ namespace Main {
         Console.WriteLine(response);
         response.IfOk(res => {
           HTTP.UserNickname = LoginField.Text;
+          File.WriteAllText("User/nickname.txt", LoginField.Text);
           WorkWindow workWindow = new WorkWindow();
           workWindow.Show();
           this.Close();

@@ -44,25 +44,33 @@ namespace TableEditor.ViewModels {
         Table.Columns.Add(new DataColumn($"Col {Table.Columns.Count.ToString()}", typeof(string)) { AllowDBNull = true });
       }
       Table = Table.Copy();
+      for (int i = 0; i < count; i++) {
+        FormulsTable.Columns.Add(new DataColumn($"Col {FormulsTable.Columns.Count.ToString()}", typeof(string)) { AllowDBNull = true });
+      }
+      FormulsTable = Table.Copy();
     }
     public void RemoveColumn(int count) {
       for (int i = 1; i <= count && Table.Columns.Count > 1; i++)
         Table.Columns.RemoveAt(Table.Columns.Count - 1);
       Table = Table.Copy();
+      for (int i = 1; i <= count && FormulsTable.Columns.Count > 1; i++)
+        FormulsTable.Columns.RemoveAt(FormulsTable.Columns.Count - 1);
+      FormulsTable = Table.Copy();
     }
     public void AddRow(int count) {
       for (int i = 0; i < count; i++) Table.Rows.Add();
+      for (int i = 0; i < count; i++) FormulsTable.Rows.Add();
     }
     public void RemoveRow(int count) {
-      for (int i = 1; i <= count && Table.Rows.Count > 1; i++)
-        Table.Rows.RemoveAt(Table.Rows.Count - 1);
+      for (int i = 1; i <= count && Table.Rows.Count > 1; i++) Table.Rows.RemoveAt(Table.Rows.Count - 1);
+      for (int i = 1; i <= count && FormulsTable.Rows.Count > 1; i++) FormulsTable.Rows.RemoveAt(FormulsTable.Rows.Count - 1);
     }
     public string GetCellContent(int column, int row) {
       string content = Table.Rows[row][column].ToString();
       return content;
     }
     public string GetCellFormula (int column, int row) {
-      if (FormulsTable.Rows[row][column].ToString() == "") return null;
+      if (FormulsTable.Rows[row][column].ToString() == "") return "";
       var content = FormulsTable.Rows[row][column].ToString();
       return content;
     }
@@ -82,6 +90,7 @@ namespace TableEditor.ViewModels {
     }
 
     public void SetCellContent(int column, int row, string content) => Table.Rows[row][column] = content;
+    public void SetCellForula(int column, int row, string formula) => FormulsTable.Rows[row][column] = formula;
 
     public TableViewModel(string tableName) {
       this.Title = tableName;

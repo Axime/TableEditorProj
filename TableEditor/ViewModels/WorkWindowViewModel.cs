@@ -3,10 +3,10 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
-using System.Data;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using TableEditor.Models;
 using TableEditor.ViewModels;
@@ -23,29 +23,27 @@ namespace TableEditor.VM {
       get => _model.Username;
       set { _model.Username = value; OnPropertyChanged(); }
     }
-
     private ObservableCollection<TableViewModel> _dataTables;
     public ObservableCollection<TableViewModel> DataTables {
       get => _dataTables;
-      set { _dataTables = value; OnPropertyChanged(); }
+      set { _dataTables = value; OnPropertyChanged();
+      }
     }
+
 
     private string _tableName = "Новая таблица";
     private int _selectTableNumber;
     private Visibility _tabControlVisStatus = Visibility.Hidden;
+    private DataGridCell _selectedItemTabControll = new();
     public string TableName {
       get => _tableName; set { _tableName = value; OnPropertyChanged(); }
     }
     public int SelectTableNumber {
       get => _selectTableNumber; set { _selectTableNumber = value; OnPropertyChanged(); }
     }
-    public Visibility TabControlVisStatus {
+    public int TabControlVisStatus {
       get {
-        if (DataTables.Count != 0) return Visibility.Visible;
-        return Visibility.Collapsed;
-      }
-      private set {
-        _tabControlVisStatus = value;
+        return DataTables.Count;
       }
     }
     #endregion
@@ -89,15 +87,13 @@ namespace TableEditor.VM {
 
     public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => {
       CreateTable();
-      if (DataTables.Count > 0) TabControlVisStatus = Visibility.Visible;
-      else TabControlVisStatus = Visibility.Collapsed;
+      
     }));
     public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { LoadTable(GetPathToLoad()); }));
     public ICommand SaveTableCommand => _saveTableCommand ?? (_saveTableCommand = new RelayCommand(parameter => { SaveTable(GetPathToSave()); }));
     public ICommand CloseTableCommand => _closeTableCommand ?? (_closeTableCommand = new RelayCommand(parameter => {
       CloseTable(SelectTableNumber);
-      if (DataTables.Count > 0) TabControlVisStatus = Visibility.Visible;
-      else TabControlVisStatus = Visibility.Collapsed;
+      
     }));
 
 
@@ -128,13 +124,14 @@ namespace TableEditor.VM {
     #endregion
 
     #region Работа с таблицами
+
     private void CreateTable() {
       TableViewModel table = new TableViewModel(TableName);
       DataTables.Add(table);
     }
     public void AddColumn(int coumn) {
       DataTables[SelectTableNumber].AddColumn(coumn);
-      OnPropertyChanged();
+      OnPropertyChanged("Table");
     }
     public void RemoveColumn(int count) => DataTables[SelectTableNumber].RemoveColumn(count);
     public void AddRow(int count) => DataTables[SelectTableNumber].AddRow(count);
@@ -177,6 +174,7 @@ namespace TableEditor.VM {
       DataTables = new ObservableCollection<TableViewModel>();
       _model = EditorModel.Model;
       _model.PropertyChanged += Model_PropertyChanged;
+      UserName = File.ReadAllText("User/nickname.txt");
     }
   }
 }

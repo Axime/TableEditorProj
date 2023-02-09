@@ -7,11 +7,15 @@ using TableEditor;
 using System.Data;
 using Aspose.Cells;
 using TableEditor.VM;
+using TableEditor.ViewModels;
+using TableLanguage;
+using System.Windows.Media.Media3D;
 
 namespace TableEditor {
   public partial class WorkWindow : Window {
     public WorkWindow() {
       InitializeComponent();
+
     }
 
     void ToggleField(ref StackPanel grid) {
@@ -46,17 +50,15 @@ namespace TableEditor {
     }
 
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
-      WorkWindowViewModel vmodel = WorkWindowViewModel.ModelV;
-      for (int i = 0; i < vmodel.DataTables[vmodel.SelectTableNumber].Table.Rows.Count; i++) {
-        for (int j = 0; j < vmodel.DataTables[vmodel.SelectTableNumber].Table.Columns.Count; j++) {
-          if (vmodel.DataTables[vmodel.SelectTableNumber].GetCellFormula(j, i) == null) return;
-          API
-        }
-      }
+
     }
 
     private void DataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e) {
-      WorkWindowViewModel vmodel = WorkWindowViewModel.ModelV;
+
+    }
+
+    private void TabContr_Loaded(object sender, RoutedEventArgs e) {
+      TabContr.GetBindingExpression(TabControl.ItemsSourceProperty).UpdateTarget();
     }
   }
 }

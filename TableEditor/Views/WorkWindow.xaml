@@ -4,6 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TableEditor.VM"
+        xmlns:cnv="clr-namespace:Converters"
         mc:Ignorable="d"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Height="735" Width="1280"
@@ -14,6 +15,9 @@
     <Window.DataContext>
         <local:WorkWindowViewModel/>
     </Window.DataContext>
+    <Window.Resources>
+        <cnv:ZeroToCollapsedConverter x:Key="ZeroToCollapsedConverter" />
+    </Window.Resources>
 
     <Grid x:Name="BaseGrid">
         <Grid.RowDefinitions>
@@ -40,7 +44,7 @@
                     <ColumnDefinition Width="95*"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel x:Name="lastTableList" Margin="50 50 50 50">
+                <StackPanel x:Name="lastTableList" Margin="50 50 50 50" Visibility="Collapsed">
                     <Label Content="Последние таблицы:" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Consolas" FontSize="15"/>
                     <ListBox>
                         <ListBox.ItemTemplate>
@@ -51,7 +55,7 @@
                     </ListBox>
                 </StackPanel>
 
-                <StackPanel x:Name="tutorials" Margin="52,50,53,50" Grid.Column="1">
+                <StackPanel x:Name="tutorials" Margin="52,50,53,50" Grid.Column="1" Visibility="Collapsed">
                     <Label Content="Туториалы:" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="White" FontFamily="Consolas" FontSize="15"/>
                     <ListBox>
                         <ListBox.ItemTemplate>
@@ -65,7 +69,7 @@
             </Grid>
         </Border>
 
-        <Grid x:Name="TableMainGrid" Grid.Column="1" Visibility="{Binding TabControlVisStatus, Mode=OneWay}">
+        <Grid x:Name="TableMainGrid" Grid.Column="1" Visibility="{Binding TabControlVisStatus, Mode=OneWay, Converter={StaticResource ZeroToCollapsedConverter}}">
             <!--This main grid for table workfield-->
             <Grid.RowDefinitions>
                 <RowDefinition Height="79*"/>
@@ -88,7 +92,7 @@
                 </StackPanel>
             </Border>
 
-            <TabControl x:Name="TabContr" ItemsSource="{Binding DataTables, Mode=TwoWay}" Grid.Row="1" TabStripPlacement="Right" Style="{DynamicResource MaterialDesignTabControl}" SelectedIndex="{Binding SelectTableNumber}" Margin="5">
+            <TabControl x:Name="TabContr" ItemsSource="{Binding DataTables, Mode=TwoWay}" Grid.Row="1" TabStripPlacement="Right" Style="{DynamicResource MaterialDesignTabControl}" SelectedIndex="{Binding SelectTableNumber}" Margin="5" Loaded="TabContr_Loaded">
                 <TabControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
@@ -98,7 +102,7 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid ItemsSource="{Binding Path=Table, Mode=TwoWay}" SelectionMode="Single" SelectionUnit="Cell" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" CellEditEnding="DataGrid_CellEditEnding" PreparingCellForEdit="DataGrid_PreparingCellForEdit">
+                        <DataGrid  ItemsSource="{Binding Table}" SelectionMode="Single" SelectionUnit="Cell" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" CellEditEnding="DataGrid_CellEditEnding" PreparingCellForEdit="DataGrid_PreparingCellForEdit">
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell" >
                                     <Style.Triggers>
@@ -115,7 +119,7 @@
 
         </Grid>
 
-        <Border x:Name="FuncFieldBody" Visibility="Visible" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="0" Grid.RowSpan="2">
+        <Border x:Name="FuncFieldBody" Visibility="Visible" Background="#252526" Grid.Column="1" RenderTransformOrigin="0,0.5" HorizontalAlignment="Left" Width="250" Grid.RowSpan="2">
 
             <Border.Effect>
                 <DropShadowEffect BlurRadius="7" ShadowDepth="1" Color="#FF232323"/>
@@ -125,6 +129,9 @@
 
                 <StackPanel x:Name="PersonalClient" Visibility="Collapsed">
                     <Label Content="Пользователь" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
+                    <Label Content="{Binding UserName, Mode=OneWay, TargetNullValue=User__name}" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
+                    <Button Content="Выйти из аккаунта" Margin="20"/>
+                    <Button Content="Выйти" Margin="20"/>
                 </StackPanel>
 
 
@@ -134,10 +141,6 @@
                     <Button Command="{Binding SaveTableCommand}" Content="Save Table" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="5 5 5 5"/>
                     <TextBox materialDesign:HintAssist.Hint="Название таблицы" Foreground="WhiteSmoke" HorizontalAlignment="Center" Text="{Binding TableName, Mode=TwoWay}" Margin="5 50 5 5" Width="230"/>
                     <Button Command="{Binding CreateTableCommand}" CommandParameter="{Binding }" Content="Create table" Click="BCreateTable" Background="#FF2F2F31" BorderBrush="#FF252526" Cursor="Hand" Margin="5 5 5 5"/>
-
-                    <StackPanel Margin=" 0 50 0 0" HorizontalAlignment="Stretch" Height="362">
-                        <Label Content="Таблицы" HorizontalAlignment="Center"  VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-                    </StackPanel>
 
                 </StackPanel>
 
@@ -190,7 +193,7 @@
             </Border.Effect>
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Label x:Name="userNickname" Content="{Binding Path=UserName}" FontSize="15" FontFamily="Consolas" Height="25"/>
+                <Label x:Name="userNickname" Content="{Binding Path=UserName, TargetNullValue=User _nickname}" FontSize="15" FontFamily="Consolas" Height="25"/>
             </StackPanel>
 
         </Border>
