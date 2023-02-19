@@ -46,6 +46,9 @@ namespace TableLanguage {
             this.type = RefType.lvalue;
           }
         }
+        public static explicit operator bool(Reference r) => (TypeCast(r, RuntimeEntityType.Boolean).Val as BooleanConstant)!.value!;
+        public static explicit operator double(Reference r) => (TypeCast(r, RuntimeEntityType.Number).Val as NumberConstant)!.value!;
+        public static explicit operator string(Reference r) => (TypeCast(r, RuntimeEntityType.String)?.Val as StringConstant)!.str!;
         public static implicit operator Reference(bool v) => new(new BooleanConstant(v), false, RefType.rvalue);
         public static implicit operator Reference(string v) => new(new StringConstant(v), false, RefType.rvalue);
         public static implicit operator Reference(double v) => new(new NumberConstant(v), false, RefType.rvalue);
