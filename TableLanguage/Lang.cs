@@ -177,8 +177,8 @@ namespace TableLanguage {
             _ => throw new NotImplementedException()
           },
           RuntimeEntityType.String => obj.Val switch {
-            BooleanConstant b => b.ToString()!,
-            NumberConstant n => n.ToString()!,
+            BooleanConstant b => b.value.ToString()!,
+            NumberConstant n => n.value.ToString()!,
             NativeFunction { Name: var n } => $"function {(n ?? "")}() {{ [native code] }}",
             Function { Name: var n } => $"function {n}() {{}}",
             Object => "[object Object]",
