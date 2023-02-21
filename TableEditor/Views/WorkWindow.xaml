@@ -103,12 +103,22 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid  ItemsSource="{Binding Table}" SelectionMode="Single" SelectionUnit="Cell" GridLinesVisibility="All" MinColumnWidth="80" CanUserSortColumns="False" CanUserAddRows="True" CanUserDeleteRows="True" CellEditEnding="DataGrid_CellEditEnding" PreparingCellForEdit="DataGrid_PreparingCellForEdit">
+                        <DataGrid  ItemsSource="{Binding Table}" 
+                                   SelectionMode="Single" 
+                                   SelectionUnit="Cell" 
+                                   GridLinesVisibility="All" 
+                                   MinColumnWidth="80" 
+                                   CanUserSortColumns="False" 
+                                   CanUserAddRows="True" 
+                                   CanUserDeleteRows="True" 
+                                   CellEditEnding="DataGrid_CellEditEnding" 
+                                   PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+                                   >
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell" >
                                     <Style.Triggers>
                                         <Trigger Property="IsSelected" Value="True">
-                                            <Setter Property="Background" Value="LightGreen"/>
+                                            <Setter Property="Background" Value="#FF44E8BE"/>
                                         </Trigger>
                                     </Style.Triggers>
                                 </Style>
