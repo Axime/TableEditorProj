@@ -132,20 +132,38 @@ namespace TableEditor.VM {
 
     #region Работа с таблицами
 
+    private TableLanguage.Lang.Engine _engine = new();
+
     private void CreateTable() {
       TableViewModel table = new TableViewModel(TableName);
       DataTables.Add(table);
     }
+
+    private bool CheckTableIndex() => !(SelectTableNumber < 0 || SelectTableNumber > DataTables.Count);
+
     public void AddColumn(int coumn) {
+      if (!CheckTableIndex()) return;
       DataTables[SelectTableNumber].AddColumn(coumn);
       OnPropertyChanged("Table");
     }
-    public void RemoveColumn(int count) => DataTables[SelectTableNumber].RemoveColumn(count);
-    public void AddRow(int count) => DataTables[SelectTableNumber].AddRow(count);
-    public void RemoveRow(int count) => DataTables[SelectTableNumber].RemoveRow(count);
+    public void RemoveColumn(int count) {
+      if (CheckTableIndex()) DataTables[SelectTableNumber].RemoveColumn(count);
+    }
+    public void AddRow(int count) {
+      if (!CheckTableIndex()) return;
+      DataTables[SelectTableNumber].AddRow(count);
+    }
+    public void RemoveRow(int count) {
+      if (!CheckTableIndex()) return;
+      DataTables[SelectTableNumber].RemoveRow(count);
+    }
 
-    public string? GetCellContent(int row, int column) => DataTables[SelectTableNumber].Table.Rows[row][column] as string;
+    public string? GetCellContent(int row, int column) {
+      if (!CheckTableIndex()) return null;
+     return DataTables[SelectTableNumber].Table.Rows[row][column] as string;
+    }
     public string[] GetColumnContent(int column) {
+      if (!CheckTableIndex() || column < 0) return null;
       string[] columnContent = new string[DataTables[SelectTableNumber].Table.Rows.Count];
       for (int i = 0; i < DataTables[SelectTableNumber].Table.Rows.Count; i++) {
         columnContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[i][column]);
@@ -153,6 +171,7 @@ namespace TableEditor.VM {
       return columnContent;
     }
     public string[] GetRowContent(int rowNumber) {
+      if (!CheckTableIndex() || rowNumber < 0) return null;
       string[] rowContent = new string[DataTables[SelectTableNumber].Table.Columns.Count];
       for (int i = 0; i < DataTables[SelectTableNumber].Table.Columns.Count; i++) {
         rowContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[rowNumber][i]);
@@ -160,19 +179,19 @@ namespace TableEditor.VM {
       return rowContent;
     }
 
-    public void SetCellContent(int row, int column, string content) => DataTables[SelectTableNumber].Table.Rows[row][column] = content;
-
+    public void SetCellContent(int row, int column, string content) {
+      if (!CheckTableIndex()) return;
+      DataTables[SelectTableNumber].Table.Rows[row][column] = content;
+    }
     public void RunFormuls() {
       for (int row = 0; row < DataTables[SelectTableNumber].Table.Rows.Count; row++) {
         for (int col = 0; col < DataTables[SelectTableNumber].Table.Columns.Count; col++) {
           string formula = GetCellContent(row, col);
           if (formula == null || !formula.StartsWith("=")) continue;
-          formula = formula.Substring(1);
+          formula = formula[1..];
           formula += ";";
           DataTables[SelectTableNumber].SetCellForula(row, col, formula);
-          var a = new TableLanguage.Lang.Engine();
-          var response = a.ExecOneOperation(formula);
-          SetCellContent(row, col, (string)response);
+          SetCellContent(row, col, (string)_engine.ExecOneOperation(formula));
         }
       }
     }
