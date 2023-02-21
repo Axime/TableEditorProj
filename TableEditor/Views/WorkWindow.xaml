@@ -88,6 +88,7 @@
                         <Button Command="{Binding RemoveRowCommand}" Content="- row" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                     </StackPanel>
                     <Button Command="{Binding CloseTableCommand}" Content="- table" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
+                    <Button Command="{Binding RunFormulsCommand}" Content="RUNFORMULA"/>
 
                 </StackPanel>
             </Border>

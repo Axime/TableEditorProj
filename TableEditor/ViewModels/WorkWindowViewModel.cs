@@ -26,7 +26,8 @@ namespace TableEditor.VM {
     private ObservableCollection<TableViewModel> _dataTables;
     public ObservableCollection<TableViewModel> DataTables {
       get => _dataTables;
-      set { _dataTables = value; OnPropertyChanged();
+      set {
+        _dataTables = value; OnPropertyChanged();
       }
     }
 
@@ -85,15 +86,18 @@ namespace TableEditor.VM {
     private ICommand _removeRowCommand;
 
 
+    private ICommand _runFormulsCommand;
+
+
     public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => {
       CreateTable();
-      
+
     }));
     public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { LoadTable(GetPathToLoad()); }));
     public ICommand SaveTableCommand => _saveTableCommand ?? (_saveTableCommand = new RelayCommand(parameter => { SaveTable(GetPathToSave()); }));
     public ICommand CloseTableCommand => _closeTableCommand ?? (_closeTableCommand = new RelayCommand(parameter => {
       CloseTable(SelectTableNumber);
-      
+
     }));
 
 
@@ -101,6 +105,9 @@ namespace TableEditor.VM {
     public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { RemoveColumn(1); }));
     public ICommand AddRowCommand => _addRowCommand ?? (_addRowCommand = new RelayCommand(parameter => { AddRow(1); }));
     public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { RemoveRow(1); }));
+
+
+    public ICommand RunFormulsCommand => _runFormulsCommand ?? (_runFormulsCommand = new RelayCommand(parameter => { RunFormuls(); }));
     #endregion
 
     #region Работа с файлами
@@ -137,9 +144,9 @@ namespace TableEditor.VM {
     public void AddRow(int count) => DataTables[SelectTableNumber].AddRow(count);
     public void RemoveRow(int count) => DataTables[SelectTableNumber].RemoveRow(count);
 
-    public string GetCellContent(int column, int row) {
-      string content = DataTables[SelectTableNumber].Table.Rows[row][column].ToString();
-      return content;
+    public string GetCellContent(int row, int column) {
+      var content = DataTables[SelectTableNumber].Table.Rows[row][column];
+      return (string)content;
     }
     public string[] GetColumnContent(int column) {
       string[] columnContent = new string[DataTables[SelectTableNumber].Table.Rows.Count];
@@ -156,7 +163,21 @@ namespace TableEditor.VM {
       return rowContent;
     }
 
-    public void SetCellContent(int column, int row, string content) => DataTables[SelectTableNumber].Table.Rows[row][column] = content;
+    public void SetCellContent(int row, int column, string content) => DataTables[SelectTableNumber].Table.Rows[row][column] = content;
+
+    public void RunFormuls() {
+      for (int row = 0; row < DataTables[SelectTableNumber].Table.Rows.Count; row++) {
+        for (int col = 0; col < DataTables[SelectTableNumber].Table.Columns.Count; col++) {
+          if (!GetCellContent(row, col).StartsWith("=") || GetCellContent(row, col) == null) break;
+          string formula = GetCellContent(row,col);
+          formula.Remove(0, 1);
+          DataTables[SelectTableNumber].SetCellForula(row, col, formula);
+          var a = new TableLanguage.Lang.Engine();
+          var response = a.ExecOneOperation(formula);
+          SetCellContent(row, col, (string)response);
+        }
+      }
+    }
 
     #endregion
 
