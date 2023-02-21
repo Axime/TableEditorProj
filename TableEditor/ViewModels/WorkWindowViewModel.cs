@@ -168,7 +168,7 @@ namespace TableEditor.VM {
     public void RunFormuls() {
       for (int row = 0; row < DataTables[SelectTableNumber].Table.Rows.Count; row++) {
         for (int col = 0; col < DataTables[SelectTableNumber].Table.Columns.Count; col++) {
-          if (!GetCellContent(row, col).StartsWith("=") || GetCellContent(row, col) == null) break;
+          if (!GetCellContent(row, col).StartsWith("=") || GetCellContent(row, col) == null) continue;
           string formula = GetCellContent(row,col);
           formula.Remove(0, 1);
           DataTables[SelectTableNumber].SetCellForula(row, col, formula);
