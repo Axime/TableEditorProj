@@ -218,7 +218,7 @@ namespace TableLanguage {
         }
 
         internal readonly Scopes scopes = new();
-        public Runner(in N nodes, in List<Module>? modules = null) {
+        public Runner(in N? nodes, in List<Module>? modules = null) {
           //this.nodes = nodes;
           if (modules != null)
             foreach (var module in modules) {
@@ -226,12 +226,14 @@ namespace TableLanguage {
                 scopes.AddVarToCurrentScope(name, value);
               }
             }
+          if (nodes != null) Exec(nodes);
+        }
+        public void Exec(in N? nodes) {
           if (nodes == null) return;
           foreach (var node in nodes) {
             ExecNode(node);
           }
         }
-
         public Reference ExecOneNode(in Node n) => ExecNode(n);
         private Reference ExecNode(in Node n) {
           return n switch {
@@ -1441,11 +1443,25 @@ namespace TableLanguage {
     }
     public class Engine {
       private readonly List<Runtime.Module>? modules;
+      private Runtime.Runner? runner = null;
+      private static N CodeToAST(string code) => Parser.Parse(Lexer.Analysis(code));
       public Engine(List<Runtime.Module>? modules = null) {
         this.modules = modules;
       }
-      public void Exec(string code) => new Runtime.Runner(Parser.Parse(Lexer.Analysis(code)), modules);
-      public Runtime.Reference ExecOneOperation(string code) => new Runtime.Runner(new(), modules).ExecOneNode(Parser.Parse(Lexer.Analysis(code))[0]);
+      public void Exec(
+        string code,
+        bool usePreviousContext = false
+      ) {
+        if (runner == null || !usePreviousContext) runner = new Runtime.Runner(null, modules);
+        runner.Exec(CodeToAST(code));
+      }
+      public Runtime.Reference ExecOneOperation(
+        string code,
+        bool usePrevioudContext = false
+      ) {
+        if (runner == null || !usePrevioudContext) runner = new Runtime.Runner(null, modules);
+        return runner.ExecOneNode(CodeToAST(code)[0]);
+      }
     }
     public static int Exec(string code) => Runner.Run(code, out var _);
 #if DEBUG
