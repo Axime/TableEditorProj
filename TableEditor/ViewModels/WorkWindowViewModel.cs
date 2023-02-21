@@ -144,10 +144,7 @@ namespace TableEditor.VM {
     public void AddRow(int count) => DataTables[SelectTableNumber].AddRow(count);
     public void RemoveRow(int count) => DataTables[SelectTableNumber].RemoveRow(count);
 
-    public string GetCellContent(int row, int column) {
-      var content = DataTables[SelectTableNumber].Table.Rows[row][column];
-      return (string)content;
-    }
+    public string? GetCellContent(int row, int column) => DataTables[SelectTableNumber].Table.Rows[row][column] as string;
     public string[] GetColumnContent(int column) {
       string[] columnContent = new string[DataTables[SelectTableNumber].Table.Rows.Count];
       for (int i = 0; i < DataTables[SelectTableNumber].Table.Rows.Count; i++) {
@@ -168,9 +165,9 @@ namespace TableEditor.VM {
     public void RunFormuls() {
       for (int row = 0; row < DataTables[SelectTableNumber].Table.Rows.Count; row++) {
         for (int col = 0; col < DataTables[SelectTableNumber].Table.Columns.Count; col++) {
-          if (!GetCellContent(row, col).StartsWith("=") || GetCellContent(row, col) == null) continue;
-          string formula = GetCellContent(row,col);
-          formula.Remove(0, 1);
+          string formula = GetCellContent(row, col);
+          if (formula == null || !formula.StartsWith("=")) continue;
+          formula = formula.Substring(1);
           DataTables[SelectTableNumber].SetCellForula(row, col, formula);
           var a = new TableLanguage.Lang.Engine();
           var response = a.ExecOneOperation(formula);
@@ -196,6 +193,7 @@ namespace TableEditor.VM {
       _model = EditorModel.Model;
       _model.PropertyChanged += Model_PropertyChanged;
       UserName = File.ReadAllText("User/nickname.txt");
+      CreateTable();
     }
   }
 }

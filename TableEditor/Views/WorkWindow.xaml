@@ -93,7 +93,7 @@
                 </StackPanel>
             </Border>
 
-            <TabControl x:Name="TabContr" ItemsSource="{Binding DataTables, Mode=TwoWay}" Grid.Row="1" TabStripPlacement="Right" Style="{DynamicResource MaterialDesignTabControl}" SelectedIndex="{Binding SelectTableNumber}" Margin="5" Loaded="TabContr_Loaded">
+            <TabControl x:Name="TabContr" ItemsSource="{Binding DataTables, Mode=TwoWay}" Grid.Row="1" TabStripPlacement="Right" Style="{DynamicResource MaterialDesignTabControl}" SelectedIndex="{Binding SelectTableNumber, Mode=TwoWay}" Margin="5" Loaded="TabContr_Loaded">
                 <TabControl.ItemTemplate>
                     <DataTemplate>
                         <StackPanel Orientation="Horizontal">
