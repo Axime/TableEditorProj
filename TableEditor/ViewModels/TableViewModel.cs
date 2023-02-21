@@ -93,7 +93,6 @@ namespace TableEditor.ViewModels {
     public void SetCellForula(int column, int row, string formula) => FormulsTable.Rows[row][column] = formula;
 
     public TableViewModel(string tableName) {
-
       this.Title = tableName;
       AddColumn(3);
       AddRow(3);

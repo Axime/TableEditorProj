@@ -168,6 +168,7 @@ namespace TableEditor.VM {
           string formula = GetCellContent(row, col);
           if (formula == null || !formula.StartsWith("=")) continue;
           formula = formula.Substring(1);
+          formula += ";";
           DataTables[SelectTableNumber].SetCellForula(row, col, formula);
           var a = new TableLanguage.Lang.Engine();
           var response = a.ExecOneOperation(formula);
