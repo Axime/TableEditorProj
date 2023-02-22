@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -89,16 +90,10 @@ namespace TableEditor.VM {
     private ICommand _runFormulsCommand;
 
 
-    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => {
-      CreateTable();
-
-    }));
+    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { CreateTable(); }));
     public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { LoadTable(GetPathToLoad()); }));
     public ICommand SaveTableCommand => _saveTableCommand ?? (_saveTableCommand = new RelayCommand(parameter => { SaveTable(GetPathToSave()); }));
-    public ICommand CloseTableCommand => _closeTableCommand ?? (_closeTableCommand = new RelayCommand(parameter => {
-      CloseTable(SelectTableNumber);
-
-    }));
+    public ICommand CloseTableCommand => _closeTableCommand ?? (_closeTableCommand = new RelayCommand(parameter => { CloseTable(SelectTableNumber); }));
 
 
     public ICommand AddColumnCommand => _addColumnCommand ?? (_addColumnCommand = new RelayCommand(parameter => { AddColumn(1); }));
@@ -125,15 +120,15 @@ namespace TableEditor.VM {
         File.WriteAllText(path, jsonData);
       } catch (Exception ex) { Console.WriteLine(ex.Message); }
     }
-    private void CloseTable(int tableNumber) {
-      try { DataTables.Remove(DataTables[tableNumber]); } catch (Exception ex) { Console.WriteLine(ex.Message); }
-    }
     #endregion
 
     #region Работа с таблицами
 
     private TableLanguage.Lang.Engine _engine = new();
 
+    private void CloseTable(int tableNumber) {
+      try { DataTables.Remove(DataTables[tableNumber]); } catch (Exception ex) { Console.WriteLine(ex.Message); }
+    }
     private void CreateTable() {
       TableViewModel table = new TableViewModel(TableName);
       DataTables.Add(table);
@@ -160,7 +155,7 @@ namespace TableEditor.VM {
 
     public string? GetCellContent(int row, int column) {
       if (!CheckTableIndex()) return null;
-     return DataTables[SelectTableNumber].Table.Rows[row][column] as string;
+      return DataTables[SelectTableNumber].Table.Rows[row][column] as string;
     }
     public string[] GetColumnContent(int column) {
       if (!CheckTableIndex() || column < 0) return null;
@@ -190,17 +185,34 @@ namespace TableEditor.VM {
           if (formula == null || !formula.StartsWith("=")) continue;
           formula = formula[1..];
           formula += ";";
+          formula = new Regex(@"(\d+):(\d+)", RegexOptions.Compiled).Replace(formula, match => $"cell({match.Groups[1].Value},{match.Groups[2].Value})");
           DataTables[SelectTableNumber].SetCellForula(row, col, formula);
           SetCellContent(row, col, (string)_engine.ExecOneOperation(formula));
         }
       }
     }
+    private string ConvertAddressToValue(string adr) {
+      int index = adr.IndexOf(":");
+      if (index == -1) return null;
+      int col = Int32.Parse(adr.Substring(index++, adr.Length - index));
+      int row = Int32.Parse(adr.Substring(0, index--));
+      if (col < 0 || row < 0) return null;
+      return GetCellContent(row,col);
+    }
+    private string MultStatementFormula(string formula) {
+      
+    }
 
     #endregion
 
     #region singleton
-    static WorkWindowViewModel _modelv;
-    public static WorkWindowViewModel ModelV => _modelv ?? (_modelv = new WorkWindowViewModel());
+    private static WorkWindowViewModel _modelv;
+    public static WorkWindowViewModel ModelV() {
+      if (_modelv == null) {
+        _modelv = new WorkWindowViewModel();
+      }
+      return _modelv;
+    }
     #endregion
 
     private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {

@@ -69,7 +69,7 @@ namespace TableEditor.ViewModels {
       string content = Table.Rows[row][column].ToString();
       return content;
     }
-    public string GetCellFormula (int column, int row) {
+    public string GetCellFormula(int column, int row) {
       if (FormulsTable.Rows[row][column].ToString() == "") return "";
       var content = FormulsTable.Rows[row][column].ToString();
       return content;
@@ -90,7 +90,13 @@ namespace TableEditor.ViewModels {
     }
 
     public void SetCellContent(int column, int row, string content) => Table.Rows[row][column] = content;
-    public void SetCellForula(int column, int row, string formula) => FormulsTable.Rows[column][row] = formula;
+    public void SetCellForula(int column, int row, string formula) {
+      try {
+        FormulsTable.Rows[column][row] = formula;
+      } catch {
+        return;
+      }
+    }
 
     public TableViewModel(string tableName) {
       this.Title = tableName;

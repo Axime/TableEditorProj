@@ -1,23 +1,22 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using TableEditor.Models;
-using TableEditor;
-using System.Data;
-using Aspose.Cells;
 using TableEditor.VM;
-using TableEditor.ViewModels;
-using TableLanguage;
-using System.Windows.Media.Media3D;
 
 namespace TableEditor {
   public partial class WorkWindow : Window {
     public WorkWindow() {
       InitializeComponent();
-
+      vm = WorkWindowViewModel.ModelV();
     }
-
+    public WorkWindowViewModel vm;
+    private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
+      vm.RunFormuls();
+      Debug.WriteLineIf(true,"Cell edit");
+    }
+    #region интерфейс
     void ToggleField(ref StackPanel grid) {
 
       List<StackPanel> fields = new() { TableList, Settings, PersonalClient };
@@ -49,9 +48,6 @@ namespace TableEditor {
 
     }
 
-    private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
-
-    }
 
     private void DataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e) {
 
@@ -60,5 +56,6 @@ namespace TableEditor {
     private void TabContr_Loaded(object sender, RoutedEventArgs e) {
       TabContr.GetBindingExpression(TabControl.ItemsSourceProperty).UpdateTarget();
     }
+    #endregion 
   }
 }
