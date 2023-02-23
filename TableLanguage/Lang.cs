@@ -41,7 +41,20 @@ namespace TableLanguage {
           }, null),
           Prototype = ObjectPrototype,
         };
+
       }
+      public static readonly Runtime.Module Global = new(new() {
+        ["Math"] = new(new Runtime.Object(new() {
+          ["sin"] = new(new Runtime.NativeFunction((env, @this, args) => {
+            var arg = (double)args[0];
+            return Math.Sin(arg);
+          }, "sin"), true, Runtime.Reference.RefType.lvalue, null, true),
+          ["cos"] = new(new Runtime.NativeFunction((env, @this, args) => {
+            var arg = (double)args[0];
+            return Math.Cos(arg);
+          }, "cos"), true, Runtime.Reference.RefType.lvalue, null, true)
+        }), true, Runtime.Reference.RefType.lvalue, null, true),
+      });
 
       public class Object : IObject {
         public IObject? Prototype { get; init; } = Prototypes.ObjectPrototype;
@@ -292,12 +305,13 @@ namespace TableLanguage {
         internal readonly Scopes scopes = new();
         internal Runner(in N? nodes, in List<Module>? modules = null) {
           //this.nodes = nodes;
-          if (modules != null)
-            foreach (var module in modules) {
-              foreach (var (name, value) in module!.entities) {
-                scopes.AddVarToCurrentScope(name, value);
-              }
+          var _m = modules ?? new();
+          _m.Add(StandardLibrary.Global);
+          foreach (var module in _m) {
+            foreach (var (name, value) in module!.entities) {
+              scopes.AddVarToCurrentScope(name, value);
             }
+          }
           if (nodes != null) Exec(nodes);
         }
         internal void Exec(in N? nodes) {
