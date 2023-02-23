@@ -11,6 +11,7 @@ namespace TableEditor {
     public WorkWindow() {
       InitializeComponent();
       vm = WorkWindowViewModel.Instance;
+      
     }
     public WorkWindowViewModel vm;
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
@@ -56,7 +57,6 @@ namespace TableEditor {
 
     private void TabContr_Loaded(object sender, RoutedEventArgs e) {
       TabContr.GetBindingExpression(TabControl.ItemsSourceProperty).UpdateTarget();
-      
     }
     #endregion
   }
