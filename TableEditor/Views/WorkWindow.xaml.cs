@@ -9,11 +9,11 @@ namespace TableEditor {
   public partial class WorkWindow : Window {
     public WorkWindow() {
       InitializeComponent();
-      vm = WorkWindowViewModel.ModelV;
+      vm = new WorkWindowViewModel();
     }
     public WorkWindowViewModel vm;
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
-      vm.RunFormuls();
+      vm.RunFormulas();
       Debug.WriteLineIf(true,"Cell edit");
     }
     #region интерфейс
@@ -56,6 +56,6 @@ namespace TableEditor {
     private void TabContr_Loaded(object sender, RoutedEventArgs e) {
       TabContr.GetBindingExpression(TabControl.ItemsSourceProperty).UpdateTarget();
     }
-    #endregion 
+    #endregion
   }
 }

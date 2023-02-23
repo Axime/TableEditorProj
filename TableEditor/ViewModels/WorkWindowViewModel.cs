@@ -32,11 +32,16 @@ namespace TableEditor.VM {
       }
     }
 
+    public TableViewModel CurrentTable {
+      get => DataTables[SelectTableNumber];
+      set => DataTables[SelectTableNumber] = value;
+    }
+
 
     private string _tableName = "Новая таблица";
     private int _selectTableNumber;
     private Visibility _tabControlVisStatus = Visibility.Hidden;
-    private DataGridCell _selectedItemTabControll = new();
+    private DataGridCell _selectedItemTabControl = new();
     public string TableName {
       get => _tableName; set { _tableName = value; OnPropertyChanged(); }
     }
@@ -87,7 +92,7 @@ namespace TableEditor.VM {
     private ICommand _removeRowCommand;
 
 
-    private ICommand _runFormulsCommand;
+    private ICommand _runFormulasCommand;
 
 
     public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { CreateTable(); }));
@@ -102,7 +107,7 @@ namespace TableEditor.VM {
     public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { RemoveRow(1); }));
 
 
-    public ICommand RunFormulsCommand => _runFormulsCommand ?? (_runFormulsCommand = new RelayCommand(parameter => { RunFormuls(); }));
+    public ICommand RunFormulasCommand => _runFormulasCommand ?? (_runFormulasCommand = new RelayCommand(parameter => { RunFormulas(); }));
     #endregion
 
     #region Работа с файлами
@@ -129,7 +134,7 @@ namespace TableEditor.VM {
         var row = args[0];
         var col = args[1];
         //if (row.Val?.Type != TableLanguage.Lang.Runtime.RuntimeEntityType.Number)
-        return _modelv.GetCellContent((int)row, (int)col) ?? "";
+        return _inst.CurrentTable.GetCellContent((int)row, (int)col) ?? "";
       }, "cell"), true, TableLanguage.Lang.Runtime.Reference.RefType.lvalue, null, true)
     }) });
 
@@ -143,55 +148,54 @@ namespace TableEditor.VM {
 
     private bool CheckTableIndex() => !(SelectTableNumber < 0 || SelectTableNumber > DataTables.Count);
 
-    public void AddColumn(int coumn) {
+    public void AddColumn(int column) {
       if (!CheckTableIndex()) return;
-      DataTables[SelectTableNumber].AddColumn(coumn);
+      CurrentTable.AddColumn(column);
       OnPropertyChanged("Table");
     }
     public void RemoveColumn(int count) {
-      if (CheckTableIndex()) DataTables[SelectTableNumber].RemoveColumn(count);
+      if (CheckTableIndex()) CurrentTable.RemoveColumn(count);
     }
     public void AddRow(int count) {
       if (!CheckTableIndex()) return;
-      DataTables[SelectTableNumber].AddRow(count);
+      CurrentTable.AddRow(count);
     }
     public void RemoveRow(int count) {
       if (!CheckTableIndex()) return;
-      DataTables[SelectTableNumber].RemoveRow(count);
+      CurrentTable.RemoveRow(count);
     }
 
     public string? GetCellContent(int row, int column) {
       if (!CheckTableIndex()) return null;
-      var res = DataTables[SelectTableNumber].Table.Rows[row][column];
-      return res as string; ;
+      return CurrentTable.GetCellContent(row, column);
     }
     public string[] GetColumnContent(int column) {
       if (!CheckTableIndex() || column < 0) return null;
-      string[] columnContent = new string[DataTables[SelectTableNumber].Table.Rows.Count];
-      for (int i = 0; i < DataTables[SelectTableNumber].Table.Rows.Count; i++) {
-        columnContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[i][column]) ?? "";
+      string[] columnContent = new string[CurrentTable.Table.Rows.Count];
+      for (int i = 0; i < CurrentTable.Table.Rows.Count; i++) {
+        columnContent[i] = Convert.ToString(CurrentTable.Table.Rows[i][column]) ?? "";
       }
       return columnContent;
     }
     public string[] GetRowContent(int rowNumber) {
       if (!CheckTableIndex() || rowNumber < 0) return null;
-      string[] rowContent = new string[DataTables[SelectTableNumber].Table.Columns.Count];
-      for (int i = 0; i < DataTables[SelectTableNumber].Table.Columns.Count; i++) {
-        rowContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[rowNumber][i]) ?? "";
+      string[] rowContent = new string[CurrentTable.Table.Columns.Count];
+      for (int i = 0; i < CurrentTable.Table.Columns.Count; i++) {
+        rowContent[i] = Convert.ToString(CurrentTable.Table.Rows[rowNumber][i]) ?? "";
       }
       return rowContent;
     }
 
     public void SetCellContent(int row, int column, string content) {
       if (!CheckTableIndex()) return;
-      DataTables[SelectTableNumber].Table.Rows[row][column] = content;
+      CurrentTable.SetCellContent(row, column, content);
     }
-    public void RunFormuls() {
+    public void RunFormulas() {
       // Formula
       // =return value;
-      // == funtion body
-      for (int row = 0; row < DataTables[SelectTableNumber].Table.Rows.Count; row++) {
-        for (int col = 0; col < DataTables[SelectTableNumber].Table.Columns.Count; col++) {
+      // == function body
+      for (int row = 0; row < CurrentTable.Table.Rows.Count; row++) {
+        for (int col = 0; col < CurrentTable.Table.Columns.Count; col++) {
           string formula = GetCellContent(row, col) ?? "";
           if (formula == null || formula == "" || formula[0] != '=') continue;
           formula += ";";
@@ -201,7 +205,7 @@ namespace TableEditor.VM {
           if (formula[0] == '=') {
             formula = $"(function(){{{formula[1..]}}})();";
           }
-          DataTables[SelectTableNumber].SetCellForula(row, col, formula);
+          CurrentTable.SetCellFormula(row, col, formula);
           result = (string)_engine.ExecOneOperation(formula);
           SetCellContent(row, col, result);
         }
@@ -212,8 +216,13 @@ namespace TableEditor.VM {
     #endregion
 
     #region singleton
-    private static WorkWindowViewModel _modelv;
-    public static WorkWindowViewModel ModelV => _modelv ??= new();
+    private static WorkWindowViewModel _inst = null;
+    public static WorkWindowViewModel Instance {
+      get {
+        if (_inst == null) _inst = new();
+        return _inst;
+      }
+    }
     #endregion
 
     private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {
@@ -222,11 +231,32 @@ namespace TableEditor.VM {
     }
     readonly EditorModel _model;
     public WorkWindowViewModel() {
-      DataTables = new ObservableCollection<TableViewModel>();
-      _model = EditorModel.Model;
-      _model.PropertyChanged += Model_PropertyChanged;
-      UserName = File.ReadAllText("User/nickname.txt");
-      CreateTable();
+      if (_inst != null) {
+        DataTables = _inst.DataTables;
+        _model = _inst._model;
+        _engine = _inst._engine;
+        _tableName = _inst._tableName;
+        _tabControlVisStatus = _inst._tabControlVisStatus;
+        _selectTableNumber = _inst._selectTableNumber;
+        _selectedItemTabControl = _inst._selectedItemTabControl;
+        _saveTableCommand = _inst._saveTableCommand;
+        _runFormulasCommand = _inst._runFormulasCommand;
+        _removeRowCommand = _inst._removeRowCommand;
+        _removeColumnCommand = _inst._removeColumnCommand;
+        _loadTableCommand = _inst._loadTableCommand;
+        _createTableCommand = _inst._createTableCommand;
+        _closeTableCommand = _inst._closeTableCommand;
+        _addRowCommand = _inst._addRowCommand;
+        _addColumnCommand = _inst._addColumnCommand;
+        UserName = _inst.UserName;
+      } else {
+        DataTables = new ObservableCollection<TableViewModel>();
+        _model = EditorModel.Model;
+        _model.PropertyChanged += Model_PropertyChanged;
+        UserName = File.ReadAllText("User/nickname.txt");
+        _inst = this;
+        CreateTable();
+      }
     }
   }
 }

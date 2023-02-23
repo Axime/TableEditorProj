@@ -13,7 +13,7 @@ namespace Main {
   public partial class MainWindow : Window {
     public MainWindow() {
       InitializeComponent();
-      WorkWindowViewModel MVVM = new();
+      //WorkWindowViewModel MVVM = new();
     }
 
     void Button_Reg_Click(object sender, RoutedEventArgs e) {
