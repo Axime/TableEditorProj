@@ -88,7 +88,8 @@
                         <Button Command="{Binding RemoveRowCommand}" Content="- row" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                     </StackPanel>
                     <Button Command="{Binding CloseTableCommand}" Content="- table" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
-                    <Button Command="{Binding RunFormulasCommand}" Content="RUNFORMULA"/>
+                    <Button Command="{Binding RunFormulasCommand}" Content="RUNFORMULA" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="10"/>
+                    <Button Command="{Binding InvertTableStatusCommand}" Content="🗘" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="10"/>
 
                 </StackPanel>
             </Border>
@@ -103,7 +104,8 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid  ItemsSource="{Binding Table}" 
+                        <DataGrid  x:Name="Doritos"
+                            ItemsSource="{Binding Table}" 
                                    SelectionMode="Single" 
                                    SelectionUnit="Cell" 
                                    GridLinesVisibility="All" 

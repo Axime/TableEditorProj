@@ -20,10 +20,6 @@ namespace TableEditor.VM {
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
     #region Секция свойств
-    public string UserName {
-      get => _model.Username;
-      set { _model.Username = value; OnPropertyChanged(); }
-    }
     private ObservableCollection<TableViewModel> _dataTables;
     public ObservableCollection<TableViewModel> DataTables {
       get => _dataTables;
@@ -37,11 +33,22 @@ namespace TableEditor.VM {
       set => DataTables[SelectTableNumber] = value;
     }
 
-
+    private bool _formulaShow = false;
     private string _tableName = "Новая таблица";
     private int _selectTableNumber;
     private Visibility _tabControlVisStatus = Visibility.Hidden;
     private DataGridCell _selectedItemTabControl = new();
+    public string UserName {
+      get => _model.Username;
+      set { _model.Username = value; OnPropertyChanged(); }
+    }
+    public bool FormulaShow {
+      get => _formulaShow;
+      set {
+        _formulaShow = value;
+        OnPropertyChanged(nameof(FormulaShow));
+      }
+    }
     public string TableName {
       get => _tableName; set { _tableName = value; OnPropertyChanged(); }
     }
@@ -94,6 +101,8 @@ namespace TableEditor.VM {
 
     private ICommand _runFormulasCommand;
 
+    private ICommand _invertTableStatusCommand;
+
 
     public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { CreateTable(); }));
     public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { LoadTable(GetPathToLoad()); }));
@@ -108,6 +117,8 @@ namespace TableEditor.VM {
 
 
     public ICommand RunFormulasCommand => _runFormulasCommand ?? (_runFormulasCommand = new RelayCommand(parameter => { RunFormulas(); }));
+
+    public ICommand InvertTableStatusCommand => _invertTableStatusCommand ?? (_invertTableStatusCommand = new RelayCommand(parameter => { ToggleFormulaView(); }));
     #endregion
 
     #region Работа с файлами
@@ -212,7 +223,11 @@ namespace TableEditor.VM {
       }
     }
 
-
+    public void ToggleFormulaView() {
+      (CurrentTable.Table, CurrentTable.FormulasTable) = (CurrentTable.FormulasTable, CurrentTable.Table);
+      FormulaShow = !FormulaShow;
+      OnPropertyChanged(nameof(DataTables));
+    }
     #endregion
 
     #region singleton

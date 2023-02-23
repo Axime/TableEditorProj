@@ -22,6 +22,9 @@ namespace TableEditor.ViewModels {
     private DataTable _formulasTable = new();
     private string _title;
     private Cell _currentCell;
+
+    public bool isExecuted;
+
     public DataTable Table {
       get => _table;
       set => _table = value;

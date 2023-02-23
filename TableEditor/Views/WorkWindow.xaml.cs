@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,7 +10,7 @@ namespace TableEditor {
   public partial class WorkWindow : Window {
     public WorkWindow() {
       InitializeComponent();
-      vm = new WorkWindowViewModel();
+      vm = WorkWindowViewModel.Instance;
     }
     public WorkWindowViewModel vm;
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
@@ -55,6 +56,7 @@ namespace TableEditor {
 
     private void TabContr_Loaded(object sender, RoutedEventArgs e) {
       TabContr.GetBindingExpression(TabControl.ItemsSourceProperty).UpdateTarget();
+      
     }
     #endregion
   }
