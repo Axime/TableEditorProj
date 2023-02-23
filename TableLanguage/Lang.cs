@@ -52,7 +52,11 @@ namespace TableLanguage {
           ["cos"] = new(new Runtime.NativeFunction((env, @this, args) => {
             var arg = (double)args[0];
             return Math.Cos(arg);
-          }, "cos"), true, Runtime.Reference.RefType.lvalue, null, true)
+          }, "cos"), true, Runtime.Reference.RefType.lvalue, null, true),
+          ["tg"] = new(new Runtime.NativeFunction((env, @this, args) => {
+            var arg = (double)args[0];
+            return Math.Tan(arg);
+          }, "tg"), true, Runtime.Reference.RefType.lvalue, null, true)
         }), true, Runtime.Reference.RefType.lvalue, null, true),
       });
 
