@@ -10,7 +10,59 @@ using NameRefDict = System.Collections.Generic.Dictionary<string, TableLanguage.
 namespace TableLanguage {
   public static class Lang {
     private static class StandardLibrary {
+      public interface IObject {
+        public Runtime.Object obj { get; init; }
+        public IObject? Prototype { get; init; }
+      }
+      private record ObjProto : IObject {
+        public Runtime.Object obj { get; init; } = null!;
+        public IObject? Prototype { get; init; }
+      }
+      interface IPrimitiveWrapper<T> {
+        public T Value { get; set; }
+        public Runtime.Reference ValueOf();
+      }
+      internal static class Prototypes {
+        public static readonly IObject ObjectPrototype = new ObjProto {
+          obj = new Runtime.Object(new() {
+            ["toString"] = new(new Runtime.NativeFunction((f, @this, n) => "[object Object]", "toString"), true, Runtime.Reference.RefType.lvalue),
+            ["__proto__"] = null!,
+          }, null),
+          Prototype = (IObject?)null,
+        };
+        public static readonly IObject NumberPrototype = new ObjProto {
+          obj = new(new() {
+            ["toString"] = new(new Runtime.NativeFunction((env, @this, args) => {
+              var value = Runtime.GetObjectProperty(@this, "valueOf").Val as Runtime.ICallable;
+              return (string)value?.Call(env, @this, new())!;
 
+            }, "toString"), true, Runtime.Reference.RefType.lvalue, null, true),
+            ["__proto__"] = new(ObjectPrototype.obj, true, Runtime.Reference.RefType.lvalue, "__proto__", true),
+          }, null),
+          Prototype = ObjectPrototype,
+        };
+      }
+
+      public class Object : IObject {
+        public IObject? Prototype { get; init; } = Prototypes.ObjectPrototype;
+        public Runtime.Object obj { get; init; } = new(new() { });
+        public Object(Runtime.Object obj) {
+          this.obj = obj;
+        }
+      }
+      public class Number : IPrimitiveWrapper<double>, IObject {
+        public IObject? Prototype { get; init; } = Prototypes.NumberPrototype;
+        public Runtime.Object obj { get; init; } = new(new() {
+          ["MAX"] = new(new Runtime.NumberConstant(double.MaxValue), false, Runtime.Reference.RefType.rvalue, null, true),
+          ["__proto__"] = new(Prototypes.NumberPrototype.obj, true, Runtime.Reference.RefType.lvalue, null, true),
+        });
+        public double Value { get; set; }
+        public Number(double v = 0) {
+          Value = v;
+          obj.props.Add("valueOf", new(new Runtime.NativeFunction((env, @this, args) => ValueOf(), "valueOf"), true, Runtime.Reference.RefType.lvalue, null, true));
+        }
+        public Runtime.Reference ValueOf() => Value;
+      }
     }
     public class Runtime {
       public enum RuntimeEntityType {
@@ -45,6 +97,16 @@ namespace TableLanguage {
             this.isConst = isConst;
             this.type = RefType.lvalue;
           }
+          addOwnerAndPropNames(this);
+        }
+        public static void addOwnerAndPropNames(in Reference obj) {
+          if (obj.Val is not Object o) return;
+          foreach (var (key, value) in o.props) {
+            if (value == null) continue;
+            value.propName = key;
+            value.owner = obj;
+            if (value.Val is Object) addOwnerAndPropNames(value);
+          }
         }
         public static explicit operator bool(Reference r) => (TypeCast(r, RuntimeEntityType.Boolean).Val as BooleanConstant)!.value!;
         public static explicit operator double(Reference r) => (TypeCast(r, RuntimeEntityType.Number).Val as NumberConstant)!.value!;
@@ -57,8 +119,8 @@ namespace TableLanguage {
       public interface IRuntimeEntity {
         public RuntimeEntityType Type { get; }
       }
-      internal interface ICallable : R {
-        public Reference? Call(Runner env, List<Reference> args);
+      public interface ICallable : R {
+        public Reference? Call(Runner env, Reference? owner, List<Reference> args);
       }
 
       internal class Function : ICallable {
@@ -68,11 +130,12 @@ namespace TableLanguage {
         public Function(Statements.FunctionDeclarationStatement func) {
           this.func = func;
         }
-        public Reference? Call(Runner env, List<Reference> args) {
+        public Reference? Call(Runner env, Reference? owner, List<Reference> args) {
           for (int i = 0; i < func.args.Count; i++) {
             var arg = args[i];
             env.scopes.AddVarToCurrentScope(func.args[i].name, arg);
           }
+          env.scopes.AddVarToCurrentScope("this", owner!);
           foreach (var node in func.body) {
             env.ExecNode(node, out var s);
             if (s?.T == Runner.ISpecSignal.Type.Return) return s.ReturnValue;
@@ -80,21 +143,26 @@ namespace TableLanguage {
           return null;
         }
       }
-      internal class NativeFunction : ICallable {
+      public class NativeFunction : ICallable {
         public RuntimeEntityType Type => RuntimeEntityType.Function;
         public string? Name;
-        public Func<Runner, List<Reference>, Reference> func;
-        public NativeFunction(Func<Runner, List<Reference>, Reference> func, string? name) {
+        public Func<Runner, Reference?, List<Reference>, Reference> func;
+        public NativeFunction(Func<Runner, Reference?, List<Reference>, Reference> func, string? name) {
           this.func = func;
           this.Name = name;
         }
-        public Reference? Call(Runner env, List<Reference> args) => func(env, args);
+        public Reference? Call(Runner env, Reference? owner, List<Reference> args) => func(env, owner, args);
       }
       internal class Object : R {
         public RuntimeEntityType Type => RuntimeEntityType.Object;
         public NameRefDict props = new();
-        public Object(NameRefDict props) {
+        public Object(NameRefDict props) : this(props, StandardLibrary.Prototypes.ObjectPrototype.obj) { }
+        public Object(NameRefDict props, Object? proto) {
           this.props = props;
+          if (proto != null) this.props.Add(
+              "__proto__",
+              new(proto, true, Reference.RefType.lvalue, null, true, "__proto__")
+            );
         }
 
       }
@@ -119,24 +187,16 @@ namespace TableLanguage {
         public BooleanConstant(bool value) { this.value = value; }
       }
       public class Module {
-        static void addOwnerAndPropNames(in Reference obj) {
-          if (obj.Val is not Object o) return;
-          foreach (var (key, value) in o.props) {
-            value.propName = key;
-            value.owner = obj;
-            if (value.Val is Object) addOwnerAndPropNames(value);
-          }
-        }
         internal NameRefDict entities;
         public Module(NameRefDict entities) {
           this.entities = entities;
           foreach (var (_, value) in entities)
-            if (value.Val is Object) addOwnerAndPropNames(value);
+            if (value.Val is Object) Reference.addOwnerAndPropNames(value);
         }
       }
 
       internal static Reference SetObjectProperty(in Reference prop, in Reference value) {
-        if (prop?.owner?.Val is not Object o) throw new TypeError();
+        if (prop?.owner?.Val is not Object o) throw new TypeError($"Cannot set properties of non-object");
         value.type = Reference.RefType.lvalue;
         o.props[prop.propName!] = value;
         return value;
@@ -155,7 +215,11 @@ namespace TableLanguage {
         } else if (obj.Val is StringConstant oStr) {
           throw new NotImplementedException();
         } else if (obj.Val is NumberConstant oNum) {
-          throw new NotImplementedException();
+          var wrapper = new StandardLibrary.Number(oNum.value);
+          return GetObjectProperty(
+           new(wrapper.obj, true, Reference.RefType.lvalue, null, true),
+            propName
+            );
         } else if (obj.Val is Function oFun) {
           throw new NotImplementedException();
         } else if (obj.Val is BooleanConstant oBool) {
@@ -165,6 +229,7 @@ namespace TableLanguage {
       }
 
       internal static Reference TypeCast(in Reference obj, RuntimeEntityType type) {
+        if (obj == null) throw new ReferenceError();
         if (obj.Val?.Type == type) return obj;
         return type switch {
           RuntimeEntityType.Boolean => obj.Val switch {
@@ -196,7 +261,7 @@ namespace TableLanguage {
         };
       }
 
-      internal class Runner {
+      public class Runner {
         internal class Scopes {
           internal class Scope {
             public bool IsGlobal { init; get; } = false;
@@ -225,7 +290,7 @@ namespace TableLanguage {
         }
 
         internal readonly Scopes scopes = new();
-        public Runner(in N? nodes, in List<Module>? modules = null) {
+        internal Runner(in N? nodes, in List<Module>? modules = null) {
           //this.nodes = nodes;
           if (modules != null)
             foreach (var module in modules) {
@@ -235,13 +300,13 @@ namespace TableLanguage {
             }
           if (nodes != null) Exec(nodes);
         }
-        public void Exec(in N? nodes) {
+        internal void Exec(in N? nodes) {
           if (nodes == null) return;
           foreach (var node in nodes) {
             ExecNode(node);
           }
         }
-        public Reference? ExecOneNode(in Node n) => ExecNode(n);
+        internal Reference? ExecOneNode(in Node n) => ExecNode(n);
 
         internal class ISpecSignal {
           public enum Type {
@@ -253,10 +318,11 @@ namespace TableLanguage {
           public Reference? ReturnValue { get; init; } = null;
         }
 
-        private Reference? ExecNode(in Node n) => ExecNode(n, out var _);
+        private Reference? ExecNode(in Node? n) => ExecNode(n, out var _);
 
-        internal Reference? ExecNode(in Node n, out ISpecSignal? signal) {
+        internal Reference? ExecNode(in Node? n, out ISpecSignal? signal) {
           signal = null;
+          if (n == null) return null;
           return n switch {
             Nodes.ObjectNode obj => ExecObject(obj),
             Nodes.ArrayNode arr => ExecArray(arr),
@@ -316,14 +382,15 @@ namespace TableLanguage {
         }
 
         private Reference? ExecFunctionCall(in Statements.FunctionCall fc) {
-          var func = ExecNode(fc.callee).Val;
+          var funcRef = ExecNode(fc.callee);
+          var func = funcRef.Val;
           if (func is ICallable f) {
             var args = new List<Reference>();
             foreach (var arg in fc.args) {
               args.Add(ExecExpression(arg));
             }
             scopes.CreateScope();
-            var res = f.Call(this, args);
+            var res = f.Call(this, funcRef.owner, args);
             scopes.DeleteScope();
             return res;
           }
@@ -393,7 +460,7 @@ namespace TableLanguage {
         }
         private Reference ExecUnaryOperator(in Reference operand, in Nodes.OperatorNode op) {
           return op.text switch {
-            "!" => !((bool)operand),
+            "!" => !(bool)operand,
             "~" => ~(long)operand,
             "+" => (long)operand,
             "-" => -(long)operand,
@@ -419,6 +486,7 @@ namespace TableLanguage {
                   NumberConstant { value: var v1 } => (right.Val as NumberConstant)!.value == v1,
                   StringConstant { str: var str } => (right.Val as StringConstant)!.str == str,
                   BooleanConstant { value: var v1 } => (right.Val as BooleanConstant)!.value == v1,
+                  _ => throw new ArgumentException()
                 };
               };
               return left.Val == right.Val;
@@ -458,7 +526,7 @@ namespace TableLanguage {
               break;
 
           }
-          
+
           if (left.Val is StringConstant leftStr && right.Val is StringConstant rightStr) {
             var lv = leftStr.str;
             var rv = rightStr.str;
@@ -513,24 +581,24 @@ namespace TableLanguage {
         }
       }
     }
-    private class Error : Exception {
+    public class Error : Exception {
       public Error(in string msg, in string errName) : base($"{errName}: {msg}") { }
       public Error(in string msg) : this(msg, "Error") { }
     }
-    private class SyntaxError : Error {
+    public class SyntaxError : Error {
       public int? pos;
       public SyntaxError(in string msg, in int? pos = null) :
         base($"{msg}{(pos != null ? $" at position {pos}" : "")}", "SyntaxError") {
         this.pos = pos;
       }
     }
-    private class ReferenceError : Error {
+    public class ReferenceError : Error {
       public ReferenceError(in string msg = "") : base(msg, "ReferenceError") { }
     }
-    private class TypeError : Error {
+    public class TypeError : Error {
       public TypeError(string msg = "") : base(msg, "TypeError") { }
     }
-    internal abstract class Node {
+    protected internal abstract class Node {
       public string Name => GetType().Name;
     }
     internal static class Statements {
@@ -1461,25 +1529,25 @@ namespace TableLanguage {
     }
     private static class Runner {
       public static int Run(string code, out Exception? exception) {
-        try {
-          var t = Lexer.Analysis(code);
-          var a = Parser.Parse(t);
-          var res = new Runtime.Runner(a, new() {
+        var t = Lexer.Analysis(code);
+        var a = Parser.Parse(t);
+        var res = new Runtime.Runner(a, new() {
           new(new() {
-            ["AddOne"] = new(new Runtime.NativeFunction((env, args) => {
+            ["AddOne"] = new(new Runtime.NativeFunction((env, @this, args) => {
               var val = args[0];
               if (val.Val is Runtime.NumberConstant num) {
                 var console = env.scopes.GlobalScope.GetVar("console");
                 var logRef = Runtime.GetObjectProperty(console, "log");
                 if (logRef.Val is Runtime.ICallable log) {
-                  log.Call(env, new() { "before: ", num.value, "\n after: ", num.value + 1 });
+                  log.Call(env, logRef.owner, new() { "before: ", num.value, "\n after: ", num.value + 1 }) ;
                 }
+                num.value += 1;
                 return num.value + 1;
               }
               throw new TypeError("Illegal type: expected number");
             }, "AddOne"), true, Runtime.Reference.RefType.lvalue),
             ["console"] = new(new Runtime.Object(new() {
-              ["log"] = new(new Runtime.NativeFunction((env, args) => {
+              ["log"] = new(new Runtime.NativeFunction((env, @this, args) => {
                 foreach (var arg in args) {
                   var str = arg.Val switch {
                     Runtime.StringConstant s => s.str,
@@ -1487,6 +1555,7 @@ namespace TableLanguage {
                     Runtime.BooleanConstant b => b.value.ToString(),
                     null => "null",
                     Runtime.NativeFunction {Name: var n} => $"function {n ?? ""}() {{ [native code] }}",
+                    Runtime.Function {Name: var n} => $"function {n ?? ""}() {{ /* function realization /* }}",
                     _ => "Unknown value"
                   };
                   Console.Write(str);
@@ -1497,13 +1566,11 @@ namespace TableLanguage {
             }), true, Runtime.Reference.RefType.lvalue)
           })
         });
-          exception = null;
-          return 0;
-        } catch (Exception e) {
-          exception = e;
-          return 1;
-        }
+        exception = null;
+        return 0;
+
       }
+
     }
     public class Engine {
       private readonly List<Runtime.Module>? modules;

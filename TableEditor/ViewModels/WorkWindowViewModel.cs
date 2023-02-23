@@ -123,8 +123,15 @@ namespace TableEditor.VM {
     #endregion
 
     #region Работа с таблицами
-
-    private TableLanguage.Lang.Engine _engine = new();
+    private static readonly Regex CellRegex = new("(\\d+):(\\d+)", RegexOptions.Compiled);
+    private readonly TableLanguage.Lang.Engine _engine = new(new() { new(new() {
+      ["cell"] = new(new TableLanguage.Lang.Runtime.NativeFunction((env, @this, args) => {
+        var row = args[0];
+        var col = args[1];
+        //if (row.Val?.Type != TableLanguage.Lang.Runtime.RuntimeEntityType.Number)
+        return _modelv.GetCellContent((int)row, (int)col) ?? "";
+      }, "cell"), true, TableLanguage.Lang.Runtime.Reference.RefType.lvalue, null, true)
+    }) });
 
     private void CloseTable(int tableNumber) {
       try { DataTables.Remove(DataTables[tableNumber]); } catch (Exception ex) { Console.WriteLine(ex.Message); }
@@ -155,13 +162,14 @@ namespace TableEditor.VM {
 
     public string? GetCellContent(int row, int column) {
       if (!CheckTableIndex()) return null;
-      return DataTables[SelectTableNumber].Table.Rows[row][column] as string;
+      var res = DataTables[SelectTableNumber].Table.Rows[row][column];
+      return res as string; ;
     }
     public string[] GetColumnContent(int column) {
       if (!CheckTableIndex() || column < 0) return null;
       string[] columnContent = new string[DataTables[SelectTableNumber].Table.Rows.Count];
       for (int i = 0; i < DataTables[SelectTableNumber].Table.Rows.Count; i++) {
-        columnContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[i][column]);
+        columnContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[i][column]) ?? "";
       }
       return columnContent;
     }
@@ -169,7 +177,7 @@ namespace TableEditor.VM {
       if (!CheckTableIndex() || rowNumber < 0) return null;
       string[] rowContent = new string[DataTables[SelectTableNumber].Table.Columns.Count];
       for (int i = 0; i < DataTables[SelectTableNumber].Table.Columns.Count; i++) {
-        rowContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[rowNumber][i]);
+        rowContent[i] = Convert.ToString(DataTables[SelectTableNumber].Table.Rows[rowNumber][i]) ?? "";
       }
       return rowContent;
     }
@@ -179,40 +187,33 @@ namespace TableEditor.VM {
       DataTables[SelectTableNumber].Table.Rows[row][column] = content;
     }
     public void RunFormuls() {
+      // Formula
+      // =return value;
+      // == funtion body
       for (int row = 0; row < DataTables[SelectTableNumber].Table.Rows.Count; row++) {
         for (int col = 0; col < DataTables[SelectTableNumber].Table.Columns.Count; col++) {
-          string formula = GetCellContent(row, col);
-          if (formula == null || !formula.StartsWith("=")) continue;
-          formula = formula[1..];
+          string formula = GetCellContent(row, col) ?? "";
+          if (formula == null || formula == "" || formula[0] != '=') continue;
           formula += ";";
-          formula = new Regex(@"(\d+):(\d+)", RegexOptions.Compiled).Replace(formula, match => $"cell({match.Groups[1].Value},{match.Groups[2].Value})");
+          string result = "";
+          formula = CellRegex.Replace(formula, match => $"cell({match.Groups[1].Value},{match.Groups[2].Value})");
+          formula = formula[1..];
+          if (formula[0] == '=') {
+            formula = $"(function(){{{formula[1..]}}})();";
+          }
           DataTables[SelectTableNumber].SetCellForula(row, col, formula);
-          SetCellContent(row, col, (string)_engine.ExecOneOperation(formula));
+          result = (string)_engine.ExecOneOperation(formula);
+          SetCellContent(row, col, result);
         }
       }
     }
-    private string ConvertAddressToValue(string adr) {
-      int index = adr.IndexOf(":");
-      if (index == -1) return null;
-      int col = Int32.Parse(adr.Substring(index++, adr.Length - index));
-      int row = Int32.Parse(adr.Substring(0, index--));
-      if (col < 0 || row < 0) return null;
-      return GetCellContent(row,col);
-    }
-    private string MultStatementFormula(string formula) {
-      
-    }
+
 
     #endregion
 
     #region singleton
     private static WorkWindowViewModel _modelv;
-    public static WorkWindowViewModel ModelV() {
-      if (_modelv == null) {
-        _modelv = new WorkWindowViewModel();
-      }
-      return _modelv;
-    }
+    public static WorkWindowViewModel ModelV => _modelv ??= new();
     #endregion
 
     private void Model_PropertyChanged(object sender, PropertyChangedEventArgs e) {

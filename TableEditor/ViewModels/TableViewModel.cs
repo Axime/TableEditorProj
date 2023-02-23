@@ -65,15 +65,10 @@ namespace TableEditor.ViewModels {
       for (int i = 1; i <= count && Table.Rows.Count > 1; i++) Table.Rows.RemoveAt(Table.Rows.Count - 1);
       for (int i = 1; i <= count && FormulsTable.Rows.Count > 1; i++) FormulsTable.Rows.RemoveAt(FormulsTable.Rows.Count - 1);
     }
-    public string GetCellContent(int column, int row) {
-      string content = Table.Rows[row][column].ToString();
-      return content;
-    }
-    public string GetCellFormula(int column, int row) {
-      if (FormulsTable.Rows[row][column].ToString() == "") return "";
-      var content = FormulsTable.Rows[row][column].ToString();
-      return content;
-    }
+    public string GetCellContent(int row, int column) => Table.Rows[row][column].ToString();
+
+    public string GetCellFormula(int row, int column) => FormulsTable.Rows[row][column].ToString();
+
     public string[] GetColumnContent(int column) {
       string[] columnContent = new string[Table.Rows.Count];
       for (int i = 0; i < Table.Rows.Count; i++) {
@@ -89,10 +84,10 @@ namespace TableEditor.ViewModels {
       return rowContent;
     }
 
-    public void SetCellContent(int column, int row, string content) => Table.Rows[row][column] = content;
-    public void SetCellForula(int column, int row, string formula) {
+    public void SetCellContent(int row, int column, string content) => Table.Rows[row][column] = content;
+    public void SetCellForula(int row, int column, string formula) {
       try {
-        FormulsTable.Rows[column][row] = formula;
+        FormulsTable.Rows[row][column] = formula;
       } catch {
         return;
       }

@@ -9,7 +9,7 @@ namespace TableEditor {
   public partial class WorkWindow : Window {
     public WorkWindow() {
       InitializeComponent();
-      vm = WorkWindowViewModel.ModelV();
+      vm = WorkWindowViewModel.ModelV;
     }
     public WorkWindowViewModel vm;
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
