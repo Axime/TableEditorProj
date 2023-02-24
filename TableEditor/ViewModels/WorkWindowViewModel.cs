@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -78,21 +79,21 @@ namespace TableEditor.VM {
     private ICommand _invertTableStatusCommand;
 
 
-    public ICommand CreateTableCommand => _createTableCommand ?? (_createTableCommand = new RelayCommand(parameter => { CreateTable(); }));
-    public ICommand LoadTableCommand => _loadTableCommand ?? (_loadTableCommand = new RelayCommand(parameter => { LoadTable(GetPathToLoad()); }));
-    public ICommand SaveTableCommand => _saveTableCommand ?? (_saveTableCommand = new RelayCommand(parameter => { SaveTable(GetPathToSave()); }));
-    public ICommand CloseTableCommand => _closeTableCommand ?? (_closeTableCommand = new RelayCommand(parameter => { CloseTable(SelectTableNumber); }));
+    public ICommand CreateTableCommand => _createTableCommand ??= new RelayCommand(parameter => { CreateTable(); });
+    public ICommand LoadTableCommand => _loadTableCommand ??= new RelayCommand(parameter => { LoadTable(GetPathToLoad()); });
+    public ICommand SaveTableCommand => _saveTableCommand ??= new RelayCommand(parameter => { SaveTable(GetPathToSave()); });
+    public ICommand CloseTableCommand => _closeTableCommand ??= new RelayCommand(parameter => { CloseTable(SelectTableNumber); });
 
 
-    public ICommand AddColumnCommand => _addColumnCommand ?? (_addColumnCommand = new RelayCommand(parameter => { AddColumn(1); }));
-    public ICommand RemoveColumnCommand => _removeColumnCommand ?? (_removeColumnCommand = new RelayCommand(parameter => { RemoveColumn(1); }));
-    public ICommand AddRowCommand => _addRowCommand ?? (_addRowCommand = new RelayCommand(parameter => { AddRow(1); }));
-    public ICommand RemoveRowCommand => _removeRowCommand ?? (_removeRowCommand = new RelayCommand(parameter => { RemoveRow(1); }));
+    public ICommand AddColumnCommand => _addColumnCommand ??= new RelayCommand(parameter => { AddColumn(); });
+    public ICommand RemoveColumnCommand => _removeColumnCommand ??= new RelayCommand(parameter => { RemoveColumn(); });
+    public ICommand AddRowCommand => _addRowCommand ??= new RelayCommand(parameter => { AddRow(); });
+    public ICommand RemoveRowCommand => _removeRowCommand ??= new RelayCommand(parameter => { RemoveRow(); });
 
 
-    public ICommand RunFormulasCommand => _runFormulasCommand ?? (_runFormulasCommand = new RelayCommand(parameter => { RunFormulas(); }));
+    public ICommand RunFormulasCommand => _runFormulasCommand ??= new RelayCommand(parameter => { RunFormulas(); });
 
-    public ICommand InvertTableStatusCommand => _invertTableStatusCommand ?? (_invertTableStatusCommand = new RelayCommand(parameter => { ToggleFormulaView(); }));
+    public ICommand InvertTableStatusCommand => _invertTableStatusCommand ??= new RelayCommand(parameter => { ToggleFormulaView(); });
     #endregion
 
 
@@ -109,7 +110,10 @@ namespace TableEditor.VM {
       get => DataTables[SelectTableNumber];
       set => DataTables[SelectTableNumber] = value;
     }
-
+    public string CurrentMode {
+      get => CurrentTable.ModeTitle;
+      set { CurrentTable.ModeTitle = value; OnPropertyChanged(nameof(CurrentMode)); }
+    }
     private bool _formulaShow = false;
     private string _tableName = "Новая таблица";
     private int _selectTableNumber;
@@ -119,11 +123,11 @@ namespace TableEditor.VM {
       get => _model.Username;
       set { _model.Username = value; OnPropertyChanged(); }
     }
-    public bool FormulaShow {
+    public bool IsFormulaView {
       get => _formulaShow;
       set {
         _formulaShow = value;
-        OnPropertyChanged(nameof(FormulaShow));
+        OnPropertyChanged(nameof(IsFormulaView));
       }
     }
     public string TableName {
@@ -143,14 +147,6 @@ namespace TableEditor.VM {
 
 
     #region Работа с таблицами
-    private readonly TableLanguage.Lang.Engine _engine = new(new() { new(new() {
-      ["cell"] = new(new TableLanguage.Lang.Runtime.NativeFunction((env, @this, args) => {
-        var row = args[0];
-        var col = args[1];
-        //if (row.Val?.Type != TableLanguage.Lang.Runtime.RuntimeEntityType.Number)
-        return _inst.CurrentTable.GetCellContent((int)row, (int)col) ?? "";
-      }, "cell"), true, TableLanguage.Lang.Runtime.Reference.RefType.lvalue, null, true)
-    }) });
 
     private void CloseTable(int tableNumber) {
       try { DataTables.Remove(DataTables[tableNumber]); } catch (Exception ex) { Console.WriteLine(ex.Message); }
@@ -162,21 +158,21 @@ namespace TableEditor.VM {
 
     private bool CheckTableIndex() => !(SelectTableNumber < 0 || SelectTableNumber > DataTables.Count);
 
-    public void AddColumn(int column) {
+    public void AddColumn(int count = 1) {
       if (!CheckTableIndex()) return;
-      CurrentTable.AddColumn();
-      OnPropertyChanged("Table");
+      for (int i = 0; i < count; i++) CurrentTable.AddColumn();
     }
-    public void RemoveColumn(int count) {
-      if (CheckTableIndex()) CurrentTable.RemoveColumn();
-    }
-    public void AddRow(int count) {
+    public void RemoveColumn(int count = 1) {
       if (!CheckTableIndex()) return;
-      CurrentTable.AddRow();
+      for (int i = 0; i < count; i++) CurrentTable.RemoveColumn();
     }
-    public void RemoveRow(int count) {
+    public void AddRow(int count = 1) {
       if (!CheckTableIndex()) return;
-      CurrentTable.RemoveRow();
+      for (int i = 0; i < count; i++) CurrentTable.AddRow();
+    }
+    public void RemoveRow(int count = 1) {
+      if (!CheckTableIndex()) return;
+      for (int i = 0; i < count; i++) CurrentTable.RemoveRow();
     }
 
     public string? GetCellContent(int row, int column) {
@@ -203,25 +199,46 @@ namespace TableEditor.VM {
     public void SetCellContent(int row, int column, string content) {
       if (!CheckTableIndex()) return;
       CurrentTable.SetCellContent(row, column, content);
+      OnPropertyChanged("Table");
     }
     public void RunFormulas() {
       // Formula
       // =return value;
       // == function body
       CurrentTable.ExecuteFormulas();
+      OnPropertyChanged("Table");
     }
 
     public void ToggleFormulaView() {
+
       //(CurrentTable.Table, CurrentTable.FormulasTable) = (CurrentTable.FormulasTable, CurrentTable.Table);
-      FormulaShow = !FormulaShow;
+      CurrentMode = IsFormulaView ? "Значения" : "Формулы";
+      IsFormulaView = !IsFormulaView;
+      OnPropertyChanged(nameof(CurrentMode));
+    }
+    private static readonly Regex CellRegex = new("(\\d+):(\\d+)", RegexOptions.Compiled);
+    public void UpdateModel(int row, int column, string content) {
+      if (!CheckTableIndex()) return;
+      if (IsFormulaView) {
+        string formula = content;
+        if (formula == null || formula == "" || formula[0] != '=') formula = $"={formula}";
+        formula += ";";
+        formula = CellRegex.Replace(formula, match => $"cell({match.Groups[1].Value},{match.Groups[2].Value})");
+        formula = formula[1..];
+        if (formula[0] == '=') {
+          formula = $"(function(){{{formula[1..]}}})();";
+        }
+        CurrentTable.SetCellFormula(row, column, formula);
+      } else CurrentTable.SetCellContent(row, column, content);
+
     }
     #endregion
 
     #region singleton
-    private static WorkWindowViewModel _inst = null;
+    private static WorkWindowViewModel _inst;
     public static WorkWindowViewModel Instance {
       get {
-        if (_inst == null) _inst = new();
+        _inst ??= new();
         return _inst;
       }
     }
@@ -233,25 +250,6 @@ namespace TableEditor.VM {
     }
     readonly EditorModel _model;
     public WorkWindowViewModel() {
-      /*      if (_inst != null) {
-              DataTables = _inst.DataTables;
-              _model = _inst._model;
-              _engine = _inst._engine;
-              _tableName = _inst._tableName;
-              _tabControlVisStatus = _inst._tabControlVisStatus;
-              _selectTableNumber = _inst._selectTableNumber;
-              _selectedItemTabControl = _inst._selectedItemTabControl;
-              _saveTableCommand = _inst._saveTableCommand;
-              _runFormulasCommand = _inst._runFormulasCommand;
-              _removeRowCommand = _inst._removeRowCommand;
-              _removeColumnCommand = _inst._removeColumnCommand;
-              _loadTableCommand = _inst._loadTableCommand;
-              _createTableCommand = _inst._createTableCommand;
-              _closeTableCommand = _inst._closeTableCommand;
-              _addRowCommand = _inst._addRowCommand;
-              _addColumnCommand = _inst._addColumnCommand;
-              UserName = _inst.UserName;
-            } else {*/
       DataTables = new ObservableCollection<TableViewModel>();
       _model = EditorModel.Model;
       _model.PropertyChanged += Model_PropertyChanged;

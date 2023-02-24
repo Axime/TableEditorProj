@@ -11,12 +11,21 @@ namespace TableEditor {
     public WorkWindow() {
       InitializeComponent();
       vm = WorkWindowViewModel.Instance;
-      
+
     }
     public WorkWindowViewModel vm;
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
-     // vm.RunFormulas();
-      Debug.WriteLineIf(true,"Cell edit");
+      Debug.WriteLine("Editing ended");
+      var row = e.Row.GetIndex();
+      var column = e.Column.DisplayIndex;
+      var content = (e.EditingElement as TextBox)!.Text;
+      Debug.WriteLine($"Строка: {row}");
+      Debug.WriteLine($"Столбец: {column}");
+      Debug.WriteLine($"Ячейка {(e.EditAction == DataGridEditAction.Cancel ? "не " : "")}была отредактирована");
+      Debug.WriteLine($"Значение:{content}");
+      if (e.EditAction == DataGridEditAction.Commit) {
+        vm.UpdateModel(row, column, content);
+      }
     }
     #region интерфейс
     void ToggleField(ref StackPanel grid) {
@@ -52,7 +61,9 @@ namespace TableEditor {
 
 
     private void DataGrid_PreparingCellForEdit(object sender, DataGridPreparingCellForEditEventArgs e) {
-
+      Debug.WriteLine("Editing started");
+      Debug.WriteLine($"Строка: {e.Row.GetIndex()}");
+      Debug.WriteLine($"Столбец: {e.Column.DisplayIndex}"); ;
     }
 
     private void TabContr_Loaded(object sender, RoutedEventArgs e) {

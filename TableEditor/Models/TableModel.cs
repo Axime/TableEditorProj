@@ -15,7 +15,7 @@ namespace TableEditor.Models {
         var row = args[0];
         var col = args[1];
         //if (row.Val?.Type != TableLanguage.Lang.Runtime.RuntimeEntityType.Number)
-        return this.GetValue((int)row, (int)col) ?? "";
+        return GetValue((int)row, (int)col) ?? "";
       }, "cell"), true, TableLanguage.Lang.Runtime.Reference.RefType.lvalue, null, true));
     }
 
@@ -49,23 +49,14 @@ namespace TableEditor.Models {
     }
 
 
-    //propfull
-    private static readonly Regex CellRegex = new("(\\d+):(\\d+)", RegexOptions.Compiled);
     public void Execute() {
       for (int row = 0; row < RowsCount; row++) {
         for (int col = 0; col < ColumnsCount; col++) {
-          string formula = GetValue(row, col) ?? "";
-          if (formula == null || formula == "" || formula[0] != '=') continue;
-          formula += ";";
-          string result = "";
-          formula = CellRegex.Replace(formula, match => $"cell({match.Groups[1].Value},{match.Groups[2].Value})");
-          formula = formula[1..];
-          if (formula[0] == '=') {
-            formula = $"(function(){{{formula[1..]}}})();";
-          }
-          SetFormula(row, col, formula);
-          result = (string)_engine.ExecOneOperation(formula);
-          SetValue(row, col, result);
+          string formula = GetFormula(row, col) ?? "";
+          if (formula == "") continue;
+          string result = (string)_engine.ExecOneOperation(formula);
+          SetExecStatus(row, col, true);
+          internalSetValue(row, col, result);
         }
       }
     }
