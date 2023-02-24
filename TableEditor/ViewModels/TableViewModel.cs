@@ -1,18 +1,7 @@
-﻿using Aspose.Cells;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Data;
-using System.Linq;
-using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows.Documents;
-using System.Windows.Markup;
-using System.Xaml;
 using TableEditor.Models;
-using static TableLanguage.Lang;
 
 namespace TableEditor.ViewModels {
   public class TableViewModel : INotifyPropertyChanged {
@@ -32,6 +21,7 @@ namespace TableEditor.ViewModels {
         AddColumn();
         AddRow();
       }
+      AddRow();
       Update();
     }
 

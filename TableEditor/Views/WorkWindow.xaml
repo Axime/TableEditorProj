@@ -106,18 +106,20 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid  x:Name="Doritos"
+                        <DataGrid
+                            x:Name="Doritos"
                             ItemsSource="{Binding Table}" 
-                                   SelectionMode="Single" 
-                                   SelectionUnit="Cell" 
-                                   GridLinesVisibility="All" 
-                                   MinColumnWidth="80" 
-                                   CanUserSortColumns="False" 
-                                   CanUserAddRows="True" 
-                                   CanUserDeleteRows="True" 
-                                   CellEditEnding="DataGrid_CellEditEnding" 
-                                   PreparingCellForEdit="DataGrid_PreparingCellForEdit"
-                                   >
+                            SelectionMode="Single" 
+                            SelectionUnit="Cell" 
+                            GridLinesVisibility="All" 
+                            MinColumnWidth="80"
+                            CanUserReorderColumns="False"
+                            CanUserSortColumns="False" 
+                            CanUserAddRows="False" 
+                            CanUserDeleteRows="False" 
+                            CellEditEnding="DataGrid_CellEditEnding" 
+                            PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+                         >
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell" >
                                     <Style.Triggers>

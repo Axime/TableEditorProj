@@ -26,13 +26,8 @@ namespace TableEditor.Models {
 
     private readonly TableLanguage.Lang.Engine _engine;
     private void CheckIndex(int row, int column) {
-      if (!(
-      0 <= row && row < RowsCount &&
-      0 <= column && column < ColumnsCount
-      )) throw new ArgumentOutOfRangeException(
-        $"Indexes must be: 0 <= row < {RowsCount} and 0 <= column < {ColumnsCount}," +
-        $"but row = {row} and column = {column}"
-      );
+      if (!(0 <= row && row < RowsCount)) throw new ArgumentOutOfRangeException(nameof(row), row, $"must be 0 <= row < {RowsCount}");
+      if (!(0 <= column && column < ColumnsCount)) throw new ArgumentOutOfRangeException(nameof(column), column, $"must be 0 <= row < {ColumnsCount}");
     }
     private string?[,] Formulas = new string?[0, 0];
     private string?[,] Values = new string?[0, 0];
