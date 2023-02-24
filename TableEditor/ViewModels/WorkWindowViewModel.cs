@@ -19,46 +19,20 @@ namespace TableEditor.VM {
     private void OnPropertyChanged([CallerMemberName] string propertyName = "")
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 
-    #region Секция свойств
-    private ObservableCollection<TableViewModel> _dataTables;
-    public ObservableCollection<TableViewModel> DataTables {
-      get => _dataTables;
-      set {
-        _dataTables = value; OnPropertyChanged();
-      }
+    #region Работа с файлами
+    private void LoadTable(string path) {
+      try {
+        if (!File.Exists(path) || path == "") return;
+        var data = JsonConvert.DeserializeObject<TableViewModel>(File.ReadAllText(path));
+        DataTables.Add(data);
+      } catch (Exception ex) { Console.WriteLine(ex.Message); }
     }
-
-    public TableViewModel CurrentTable {
-      get => DataTables[SelectTableNumber];
-      set => DataTables[SelectTableNumber] = value;
-    }
-
-    private bool _formulaShow = false;
-    private string _tableName = "Новая таблица";
-    private int _selectTableNumber;
-    private Visibility _tabControlVisStatus = Visibility.Hidden;
-    private DataGridCell _selectedItemTabControl = new();
-    public string UserName {
-      get => _model.Username;
-      set { _model.Username = value; OnPropertyChanged(); }
-    }
-    public bool FormulaShow {
-      get => _formulaShow;
-      set {
-        _formulaShow = value;
-        OnPropertyChanged(nameof(FormulaShow));
-      }
-    }
-    public string TableName {
-      get => _tableName; set { _tableName = value; OnPropertyChanged(); }
-    }
-    public int SelectTableNumber {
-      get => _selectTableNumber; set { _selectTableNumber = value; OnPropertyChanged(); }
-    }
-    public int TabControlVisStatus {
-      get {
-        return DataTables.Count;
-      }
+    private void SaveTable(string path) {
+      try {
+        TableViewModel toSave = DataTables[SelectTableNumber];
+        string jsonData = JsonConvert.SerializeObject(toSave);
+        File.WriteAllText(path, jsonData);
+      } catch (Exception ex) { Console.WriteLine(ex.Message); }
     }
     #endregion
 
@@ -121,25 +95,54 @@ namespace TableEditor.VM {
     public ICommand InvertTableStatusCommand => _invertTableStatusCommand ?? (_invertTableStatusCommand = new RelayCommand(parameter => { ToggleFormulaView(); }));
     #endregion
 
-    #region Работа с файлами
-    private void LoadTable(string path) {
-      try {
-        if (!File.Exists(path) || path == "") return;
-        var data = JsonConvert.DeserializeObject<TableViewModel>(File.ReadAllText(path));
-        DataTables.Add(data);
-      } catch (Exception ex) { Console.WriteLine(ex.Message); }
+
+    #region Секция свойств
+    private ObservableCollection<TableViewModel> _dataTables;
+    public ObservableCollection<TableViewModel> DataTables {
+      get => _dataTables;
+      set {
+        _dataTables = value; OnPropertyChanged();
+      }
     }
-    private void SaveTable(string path) {
-      try {
-        TableViewModel toSave = DataTables[SelectTableNumber];
-        string jsonData = JsonConvert.SerializeObject(toSave);
-        File.WriteAllText(path, jsonData);
-      } catch (Exception ex) { Console.WriteLine(ex.Message); }
+
+    public TableViewModel CurrentTable {
+      get => DataTables[SelectTableNumber];
+      set => DataTables[SelectTableNumber] = value;
+    }
+
+    private bool _formulaShow = false;
+    private string _tableName = "Новая таблица";
+    private int _selectTableNumber;
+    private Visibility _tabControlVisStatus = Visibility.Hidden;
+    private DataGridCell _selectedItemTabControl = new();
+    public string UserName {
+      get => _model.Username;
+      set { _model.Username = value; OnPropertyChanged(); }
+    }
+    public bool FormulaShow {
+      get => _formulaShow;
+      set {
+        _formulaShow = value;
+        OnPropertyChanged(nameof(FormulaShow));
+      }
+    }
+    public string TableName {
+      get => _tableName; set { _tableName = value; OnPropertyChanged(); }
+    }
+    public int SelectTableNumber {
+      get => _selectTableNumber; set { _selectTableNumber = value; OnPropertyChanged(); }
+    }
+    public int TabControlVisStatus {
+      get {
+        return DataTables.Count;
+      }
     }
     #endregion
 
+
+
+
     #region Работа с таблицами
-    private static readonly Regex CellRegex = new("(\\d+):(\\d+)", RegexOptions.Compiled);
     private readonly TableLanguage.Lang.Engine _engine = new(new() { new(new() {
       ["cell"] = new(new TableLanguage.Lang.Runtime.NativeFunction((env, @this, args) => {
         var row = args[0];
@@ -161,19 +164,19 @@ namespace TableEditor.VM {
 
     public void AddColumn(int column) {
       if (!CheckTableIndex()) return;
-      CurrentTable.AddColumn(column);
+      CurrentTable.AddColumn();
       OnPropertyChanged("Table");
     }
     public void RemoveColumn(int count) {
-      if (CheckTableIndex()) CurrentTable.RemoveColumn(count);
+      if (CheckTableIndex()) CurrentTable.RemoveColumn();
     }
     public void AddRow(int count) {
       if (!CheckTableIndex()) return;
-      CurrentTable.AddRow(count);
+      CurrentTable.AddRow();
     }
     public void RemoveRow(int count) {
       if (!CheckTableIndex()) return;
-      CurrentTable.RemoveRow(count);
+      CurrentTable.RemoveRow();
     }
 
     public string? GetCellContent(int row, int column) {
@@ -205,28 +208,12 @@ namespace TableEditor.VM {
       // Formula
       // =return value;
       // == function body
-      for (int row = 0; row < CurrentTable.Table.Rows.Count; row++) {
-        for (int col = 0; col < CurrentTable.Table.Columns.Count; col++) {
-          string formula = GetCellContent(row, col) ?? "";
-          if (formula == null || formula == "" || formula[0] != '=') continue;
-          formula += ";";
-          string result = "";
-          formula = CellRegex.Replace(formula, match => $"cell({match.Groups[1].Value},{match.Groups[2].Value})");
-          formula = formula[1..];
-          if (formula[0] == '=') {
-            formula = $"(function(){{{formula[1..]}}})();";
-          }
-          CurrentTable.SetCellFormula(row, col, formula);
-          result = (string)_engine.ExecOneOperation(formula);
-          SetCellContent(row, col, result);
-        }
-      }
+      CurrentTable.ExecuteFormulas();
     }
 
     public void ToggleFormulaView() {
-      (CurrentTable.Table, CurrentTable.FormulasTable) = (CurrentTable.FormulasTable, CurrentTable.Table);
+      //(CurrentTable.Table, CurrentTable.FormulasTable) = (CurrentTable.FormulasTable, CurrentTable.Table);
       FormulaShow = !FormulaShow;
-      OnPropertyChanged(nameof(DataTables));
     }
     #endregion
 
@@ -246,32 +233,32 @@ namespace TableEditor.VM {
     }
     readonly EditorModel _model;
     public WorkWindowViewModel() {
-      if (_inst != null) {
-        DataTables = _inst.DataTables;
-        _model = _inst._model;
-        _engine = _inst._engine;
-        _tableName = _inst._tableName;
-        _tabControlVisStatus = _inst._tabControlVisStatus;
-        _selectTableNumber = _inst._selectTableNumber;
-        _selectedItemTabControl = _inst._selectedItemTabControl;
-        _saveTableCommand = _inst._saveTableCommand;
-        _runFormulasCommand = _inst._runFormulasCommand;
-        _removeRowCommand = _inst._removeRowCommand;
-        _removeColumnCommand = _inst._removeColumnCommand;
-        _loadTableCommand = _inst._loadTableCommand;
-        _createTableCommand = _inst._createTableCommand;
-        _closeTableCommand = _inst._closeTableCommand;
-        _addRowCommand = _inst._addRowCommand;
-        _addColumnCommand = _inst._addColumnCommand;
-        UserName = _inst.UserName;
-      } else {
-        DataTables = new ObservableCollection<TableViewModel>();
-        _model = EditorModel.Model;
-        _model.PropertyChanged += Model_PropertyChanged;
-        UserName = File.ReadAllText("User/nickname.txt");
-        _inst = this;
-        CreateTable();
-      }
+      /*      if (_inst != null) {
+              DataTables = _inst.DataTables;
+              _model = _inst._model;
+              _engine = _inst._engine;
+              _tableName = _inst._tableName;
+              _tabControlVisStatus = _inst._tabControlVisStatus;
+              _selectTableNumber = _inst._selectTableNumber;
+              _selectedItemTabControl = _inst._selectedItemTabControl;
+              _saveTableCommand = _inst._saveTableCommand;
+              _runFormulasCommand = _inst._runFormulasCommand;
+              _removeRowCommand = _inst._removeRowCommand;
+              _removeColumnCommand = _inst._removeColumnCommand;
+              _loadTableCommand = _inst._loadTableCommand;
+              _createTableCommand = _inst._createTableCommand;
+              _closeTableCommand = _inst._closeTableCommand;
+              _addRowCommand = _inst._addRowCommand;
+              _addColumnCommand = _inst._addColumnCommand;
+              UserName = _inst.UserName;
+            } else {*/
+      DataTables = new ObservableCollection<TableViewModel>();
+      _model = EditorModel.Model;
+      _model.PropertyChanged += Model_PropertyChanged;
+      UserName = File.ReadAllText("User/nickname.txt");
+      _inst = this;
+      CreateTable();
+      //}
     }
   }
 }

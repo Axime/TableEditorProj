@@ -15,7 +15,7 @@ namespace TableEditor {
     }
     public WorkWindowViewModel vm;
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
-      vm.RunFormulas();
+     // vm.RunFormulas();
       Debug.WriteLineIf(true,"Cell edit");
     }
     #region интерфейс
