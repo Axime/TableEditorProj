@@ -3,10 +3,10 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
-using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -26,74 +26,69 @@ namespace TableEditor.VM {
         if (!File.Exists(path) || path == "") return;
         var data = JsonConvert.DeserializeObject<TableViewModel>(File.ReadAllText(path));
         DataTables.Add(data);
-      } catch (Exception ex) { Console.WriteLine(ex.Message); }
+      } catch (Exception ex) {
+        Debug.WriteLine(ex.Message);
+      }
     }
     private void SaveTable(string path) {
       try {
-        TableViewModel toSave = DataTables[SelectTableNumber];
+        if (!CheckTableIndex()) return;
+        TableViewModel toSave = CurrentTable;
         string jsonData = JsonConvert.SerializeObject(toSave);
         File.WriteAllText(path, jsonData);
-      } catch (Exception ex) { Console.WriteLine(ex.Message); }
+      } catch (Exception ex) {
+        Debug.WriteLine(ex.Message);
+      }
     }
     #endregion
 
+    private const string OpenDialogFilter = "PSP TableEditor Table (*.pspt)|*.pspt";
+    private static string GetPathToLoad() {
+      OpenFileDialog dlg = new() {
+        Filter = OpenDialogFilter
+      };
+      bool? result = dlg.ShowDialog();
+      if (result == true) return dlg.FileName;
+      return "";
+    }
+    private static string GetPathToSave() {
+      SaveFileDialog dlg = new() {
+        Filter = OpenDialogFilter
+      };
+      bool? result = dlg.ShowDialog();
+      if (result == true) return dlg.FileName;
+      return "";
+    }
+
     #region Секция команд
-    private string GetPathToLoad() {
-      OpenFileDialog ovd = new OpenFileDialog();
-      ovd.Filter = "Text documents (*.pspt)|*.pspt";
-      Nullable<bool> result = ovd.ShowDialog();
-      if (result == true) {
-        // Open document
-        string filename = ovd.FileName;
-        return filename;
-      }
-      return "";
-    }
-    private string GetPathToSave() {
-      SaveFileDialog svd = new SaveFileDialog();
-      svd.Filter = "Text documents (*.pspt)|*.pspt";
-      Nullable<bool> result = svd.ShowDialog();
-      if (result == true) {
-        // Open document
-        string filename = svd.FileName;
-        return filename;
-      }
-      return "";
-    }
+    // table command
+    private readonly ICommand _createTableCommand;
+    private readonly ICommand _loadTableCommand;
+    private readonly ICommand _saveTableCommand;
+    private readonly ICommand _closeTableCommand;
+    // table row/column command
+    private readonly ICommand _addColumnCommand;
+    private readonly ICommand _removeColumnCommand;
+    private readonly ICommand _addRowCommand;
+    private readonly ICommand _removeRowCommand;
+    // modes command
+    private readonly ICommand _runFormulasCommand;
+    private readonly ICommand _toggleViewMode;
+    // properties
+    public ICommand CreateTableCommand => _createTableCommand;
+    public ICommand LoadTableCommand => _loadTableCommand;
+    public ICommand SaveTableCommand => _saveTableCommand;
+    public ICommand CloseTableCommand => _closeTableCommand;
 
 
-    private ICommand _createTableCommand;
-    private ICommand _loadTableCommand;
-    private ICommand _saveTableCommand;
-    private ICommand _closeTableCommand;
+    public ICommand AddColumnCommand => _addColumnCommand;
+    public ICommand RemoveColumnCommand => _removeColumnCommand;
+    public ICommand AddRowCommand => _addRowCommand;
+    public ICommand RemoveRowCommand => _removeRowCommand;
 
 
-    private ICommand _addColumnCommand;
-    private ICommand _removeColumnCommand;
-    private ICommand _addRowCommand;
-    private ICommand _removeRowCommand;
-
-
-    private ICommand _runFormulasCommand;
-
-    private ICommand _invertTableStatusCommand;
-
-
-    public ICommand CreateTableCommand => _createTableCommand ??= new RelayCommand(parameter => { CreateTable(); });
-    public ICommand LoadTableCommand => _loadTableCommand ??= new RelayCommand(parameter => { LoadTable(GetPathToLoad()); });
-    public ICommand SaveTableCommand => _saveTableCommand ??= new RelayCommand(parameter => { SaveTable(GetPathToSave()); });
-    public ICommand CloseTableCommand => _closeTableCommand ??= new RelayCommand(parameter => { CloseTable(SelectTableNumber); });
-
-
-    public ICommand AddColumnCommand => _addColumnCommand ??= new RelayCommand(parameter => { AddColumn(); });
-    public ICommand RemoveColumnCommand => _removeColumnCommand ??= new RelayCommand(parameter => { RemoveColumn(); });
-    public ICommand AddRowCommand => _addRowCommand ??= new RelayCommand(parameter => { AddRow(); });
-    public ICommand RemoveRowCommand => _removeRowCommand ??= new RelayCommand(parameter => { RemoveRow(); });
-
-
-    public ICommand RunFormulasCommand => _runFormulasCommand ??= new RelayCommand(parameter => { RunFormulas(); });
-
-    public ICommand InvertTableStatusCommand => _invertTableStatusCommand ??= new RelayCommand(parameter => { ToggleFormulaView(); });
+    public ICommand RunFormulasCommand => _runFormulasCommand;
+    public ICommand ToggleViewMode => _toggleViewMode;
     #endregion
 
 
@@ -111,8 +106,15 @@ namespace TableEditor.VM {
       set => DataTables[SelectTableNumber] = value;
     }
     public string CurrentMode {
-      get => CurrentTable.ModeTitle;
-      set { CurrentTable.ModeTitle = value; OnPropertyChanged(nameof(CurrentMode)); }
+      get {
+        if (!CheckTableIndex()) return "Значения";
+        return CurrentTable.ModeTitle;
+      }
+      set {
+        if (!CheckTableIndex()) return;
+        CurrentTable.ModeTitle = value;
+        OnPropertyChanged(nameof(CurrentMode));
+      }
     }
     private bool _formulaShow = false;
     private string _tableName = "Новая таблица";
@@ -152,7 +154,7 @@ namespace TableEditor.VM {
       try { DataTables.Remove(DataTables[tableNumber]); } catch (Exception ex) { Console.WriteLine(ex.Message); }
     }
     private void CreateTable() {
-      TableViewModel table = new TableViewModel(TableName);
+      TableViewModel table = new(TableName);
       DataTables.Add(table);
     }
 
@@ -188,7 +190,7 @@ namespace TableEditor.VM {
       return columnContent;
     }
     public string[] GetRowContent(int rowNumber) {
-      if (!CheckTableIndex() || rowNumber < 0) return null;
+      if (!CheckTableIndex() || rowNumber < 0) return Array.Empty<string>();
       string[] rowContent = new string[CurrentTable.Table.Columns.Count];
       for (int i = 0; i < CurrentTable.Table.Columns.Count; i++) {
         rowContent[i] = Convert.ToString(CurrentTable.Table.Rows[rowNumber][i]) ?? "";
@@ -202,16 +204,12 @@ namespace TableEditor.VM {
       OnPropertyChanged("Table");
     }
     public void RunFormulas() {
-      // Formula
-      // =return value;
-      // == function body
+      if (!CheckTableIndex()) return;
       CurrentTable.ExecuteFormulas();
       OnPropertyChanged("Table");
     }
 
     public void ToggleFormulaView() {
-
-      //(CurrentTable.Table, CurrentTable.FormulasTable) = (CurrentTable.FormulasTable, CurrentTable.Table);
       CurrentMode = IsFormulaView ? "Значения" : "Формулы";
       IsFormulaView = !IsFormulaView;
       OnPropertyChanged(nameof(CurrentMode));
@@ -256,7 +254,17 @@ namespace TableEditor.VM {
       UserName = File.ReadAllText("User/nickname.txt");
       _inst = this;
       CreateTable();
-      //}
+      _createTableCommand = new RelayCommand(parameter => { CreateTable(); });
+      _loadTableCommand = new RelayCommand(parameter => { LoadTable(GetPathToLoad()); });
+      _saveTableCommand = new RelayCommand(parameter => { SaveTable(GetPathToSave()); });
+      _closeTableCommand = new RelayCommand(parameter => { CloseTable(SelectTableNumber); });
+      _addColumnCommand = new RelayCommand(parameter => { AddColumn(); });
+      _removeColumnCommand = new RelayCommand(parameter => { RemoveColumn(); });
+      _addRowCommand = new RelayCommand(parameter => { AddRow(); });
+      _removeRowCommand = new RelayCommand(parameter => { RemoveRow(); });
+      _runFormulasCommand = new RelayCommand(parameter => { RunFormulas(); });
+      _toggleViewMode = new RelayCommand(parameter => { ToggleFormulaView(); });
+
     }
   }
 }

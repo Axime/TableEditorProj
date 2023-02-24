@@ -89,7 +89,7 @@
                     </StackPanel>
                     <Button Command="{Binding CloseTableCommand}" Content="- table" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                     <Button Command="{Binding RunFormulasCommand}" Content="RUNFORMULA" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="10"/>
-                    <Button Command="{Binding InvertTableStatusCommand}" Content="🗘 ChangeView" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="10"/>
+                    <Button Command="{Binding ToggleViewMode}" Content="🗘 ChangeView" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="10"/>
                     <TextBlock Text="{Binding CurrentMode}" Margin="10" FontSize="16" Background="#ff2f2f31" Foreground="White" Padding="10">
                     </TextBlock>
 
