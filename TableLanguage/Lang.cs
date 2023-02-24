@@ -2,12 +2,19 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
-using N = System.Collections.Generic.List<TableLanguage.Lang.Node>;
-using T = System.Collections.Generic.List<TableLanguage.Lang.Token>;
-using R = TableLanguage.Lang.Runtime.IRuntimeEntity;
-using NameRefDict = System.Collections.Generic.Dictionary<string, TableLanguage.Lang.Runtime.Reference>;
 
 namespace TableLanguage {
+  using N = List<Lang.Node>;
+  using T = List<Lang.Token>;
+  using R = Lang.Runtime.IRuntimeEntity;
+  using NameRefDict = Dictionary<string, Lang.Runtime.Reference>;
+
+  using NativeFunctionWrapper = Func<
+    Lang.Runtime.Runner,
+    Lang.Runtime.Reference?,
+    List<Lang.Runtime.Reference>,
+    Lang.Runtime.Reference
+   >;
   public static class Lang {
     private static class StandardLibrary {
       public interface IObject {
@@ -160,11 +167,12 @@ namespace TableLanguage {
           return null;
         }
       }
+
       public class NativeFunction : ICallable {
         public RuntimeEntityType Type => RuntimeEntityType.Function;
         public string? Name;
-        public Func<Runner, Reference?, List<Reference>, Reference> func;
-        public NativeFunction(Func<Runner, Reference?, List<Reference>, Reference> func, string? name) {
+        public NativeFunctionWrapper func;
+        public NativeFunction(NativeFunctionWrapper func, string? name) {
           this.func = func;
           this.Name = name;
         }
