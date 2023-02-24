@@ -219,12 +219,16 @@ namespace TableEditor.VM {
       if (!CheckTableIndex()) return;
       if (IsFormulaView) {
         string formula = content;
-        if (formula == null || formula == "" || formula[0] != '=') formula = $"={formula}";
-        formula += ";";
-        formula = CellRegex.Replace(formula, match => $"cell({match.Groups[1].Value},{match.Groups[2].Value})");
-        formula = formula[1..];
-        if (formula[0] == '=') {
-          formula = $"(function(){{{formula[1..]}}})();";
+        if (string.IsNullOrWhiteSpace(formula)) {
+          formula = "";
+        } else {
+          if (formula[0] != '=') formula = $"={formula}";
+          if (formula[^1] != ';') formula += ";";
+          formula = CellRegex.Replace(formula, match => $"cell({match.Groups[1].Value},{match.Groups[2].Value})");
+          formula = formula[1..];
+          if (formula[0] == '=') {
+            formula = $"(function(){{{formula[1..]}}})();";
+          }
         }
         CurrentTable.SetCellFormula(row, column, formula);
       } else CurrentTable.SetCellContent(row, column, content);
