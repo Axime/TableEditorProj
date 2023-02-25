@@ -2,11 +2,9 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
-using System.Data.Common;
 using System.IO;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
-using TableEditor.ViewModels;
 
 namespace TableEditor.Models {
   public class EditorModel : INotifyPropertyChanged {

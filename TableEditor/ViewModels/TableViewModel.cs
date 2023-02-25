@@ -3,7 +3,7 @@ using System.Data;
 using System.Runtime.CompilerServices;
 using TableEditor.Models;
 
-namespace TableEditor.ViewModels {
+namespace TableEditor.VM {
   public class TableViewModel : INotifyPropertyChanged {
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string propertyName = "")
@@ -54,11 +54,12 @@ namespace TableEditor.ViewModels {
 
     public void AddColumn() {
       model.AddColumn();
-      Table.Columns.Add(new DataColumn($"Col {Table.Columns.Count}", typeof(string)) { AllowDBNull = true });
+      Table.Columns.Add(new DataColumn() { AllowDBNull = true, Caption = $"{model.ColumnsCount}"});
+      OnPropertyChanged(nameof(Table));
     }
     public void RemoveColumn() {
       model.RemoveColumn();
-      Table.Columns.RemoveAt(model.ColumnsCount);
+      Table.Columns.RemoveAt(model.ColumnsCount - 1);
     }
 
     public void AddRow() {
@@ -67,7 +68,7 @@ namespace TableEditor.ViewModels {
     }
     public void RemoveRow() {
       model.RemoveRow();
-      Table.Rows.RemoveAt(model.ColumnsCount);
+      Table.Rows.RemoveAt(model.RowsCount - 1);
     }
 
     public string GetCellContent(int row, int column) => model.GetValue(row, column);
