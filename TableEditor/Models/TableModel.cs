@@ -245,7 +245,7 @@ namespace TableEditor.Models {
           var currentArrayLength = 524_288; // 512 kb
           byte[] bytes = new byte[currentArrayLength];
           var CheckLength = (ulong required) => {
-            while ((ptr + 1ul + required) < (ulong)currentArrayLength) currentArrayLength += _100kb;
+            while ((ptr + 1ul + required) > (ulong)currentArrayLength) currentArrayLength += _100kb;
             Array.Resize(ref bytes, currentArrayLength);
           };
           bytes.PlaceInt(rowCount, ref ptr);
