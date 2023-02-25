@@ -8,7 +8,7 @@ namespace TableEditor.ViewModels {
     public event PropertyChangedEventHandler? PropertyChanged;
     private void OnPropertyChanged([CallerMemberName] string propertyName = "")
             => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-    private readonly TableModel model = new();
+    private readonly TableModel model;
     private DataTable _table = new();
     public DataTable Table {
       get => _table;
@@ -17,6 +17,7 @@ namespace TableEditor.ViewModels {
 
     public TableViewModel(string tableName) {
       _title = tableName;
+      model= new TableModel(tableName);
       for (int i = 0; i < 3; i++) {
         AddColumn();
         AddRow();
