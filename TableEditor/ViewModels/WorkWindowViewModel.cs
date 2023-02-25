@@ -91,7 +91,6 @@ namespace TableEditor.VM {
     public ICommand ToggleViewMode => _toggleViewMode;
     #endregion
 
-
     #region Секция свойств
     private ObservableCollection<TableViewModel> _dataTables;
     public ObservableCollection<TableViewModel> DataTables {
@@ -116,6 +115,7 @@ namespace TableEditor.VM {
         OnPropertyChanged(nameof(CurrentMode));
       }
     }
+    private string _statusWarning = "";
     private bool _formulaShow = false;
     private string _tableName = "Новая таблица";
     private int _selectTableNumber;
@@ -143,10 +143,14 @@ namespace TableEditor.VM {
         return DataTables.Count;
       }
     }
+    public string StatusWarning {
+      get => _statusWarning;
+      set {
+        _statusWarning = value;
+        OnPropertyChanged(nameof(StatusWarning));
+      }
+    }
     #endregion
-
-
-
 
     #region Работа с таблицами
 
@@ -205,7 +209,13 @@ namespace TableEditor.VM {
     }
     public void RunFormulas() {
       if (!CheckTableIndex()) return;
-      CurrentTable.ExecuteFormulas();
+      try {
+        CurrentTable.ExecuteFormulas();
+        StatusWarning = "";
+      } catch {
+        StatusWarning = "Ошибка выполнения формулы";
+        MessageBox.Show("Ошибка выполнения формулы","ОШИБКА");
+      }
       OnPropertyChanged("Table");
     }
 
@@ -255,7 +265,7 @@ namespace TableEditor.VM {
       DataTables = new ObservableCollection<TableViewModel>();
       _model = EditorModel.Model;
       _model.PropertyChanged += Model_PropertyChanged;
-      UserName = File.ReadAllText("User/nickname.txt");
+      UserName = File.ReadAllText("User/nickname.txt").Split(' ')[0];
       _inst = this;
       CreateTable();
       _createTableCommand = new RelayCommand(parameter => { CreateTable(); });

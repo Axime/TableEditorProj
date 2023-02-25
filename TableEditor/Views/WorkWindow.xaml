@@ -147,8 +147,7 @@
                 <StackPanel x:Name="PersonalClient" Visibility="Collapsed">
                     <Label Content="Пользователь" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
                     <Label Content="{Binding UserName, Mode=OneWay, TargetNullValue=User__name}" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-                    <Button Content="Выйти из аккаунта" Margin="20"/>
-                    <Button Content="Выйти" Margin="20"/>
+                    <Button Content="Выйти из аккаунта" Click="Button_Click" Margin="20"/>
                 </StackPanel>
 
 
@@ -211,6 +210,7 @@
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Label x:Name="userNickname" Content="{Binding Path=UserName, TargetNullValue=User _nickname}" FontSize="15" FontFamily="Consolas" Height="25"/>
+                <Label Content="{Binding Path=StatusWarning, UpdateSourceTrigger=PropertyChanged}" FontSize="15" FontFamily="Consolas" Height="25"/>
             </StackPanel>
 
         </Border>

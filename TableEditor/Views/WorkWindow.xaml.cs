@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Main;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using TableEditor.VM;
@@ -11,7 +13,6 @@ namespace TableEditor {
     public WorkWindow() {
       InitializeComponent();
       vm = WorkWindowViewModel.Instance;
-
     }
     public WorkWindowViewModel vm;
     private void DataGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e) {
@@ -70,5 +71,13 @@ namespace TableEditor {
       TabContr.GetBindingExpression(TabControl.ItemsSourceProperty).UpdateTarget();
     }
     #endregion
+
+    private void Button_Click(object sender, RoutedEventArgs e) {
+      string[] userData = File.ReadAllText("User/nickname.txt").Split(' ');
+      File.WriteAllText("User/nickname.txt", userData[0]);
+      var login = new MainWindow();
+      login.Show();
+      this.Close();
+    }
   }
 }
