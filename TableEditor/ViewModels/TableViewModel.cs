@@ -18,7 +18,7 @@ namespace TableEditor.ViewModels {
     public TableViewModel(string tableName) {
       _title = tableName;
       model= new TableModel(tableName);
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 10; i++) {
         AddColumn();
         AddRow();
       }

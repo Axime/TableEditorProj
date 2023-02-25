@@ -98,9 +98,13 @@ namespace Main {
           WorkWindow workWindow = new WorkWindow();
           workWindow.Show();
           this.Close();
+        }).IfError(err => {
+          MessageBox.Show("Неправильный логин или пароль!", "Ошибка");
         });
+        
       } catch (Exception e) {
         Console.WriteLine(e.ToString());
+        MessageBox.Show("Неправильный логин или пароль!","Ошибка");
         ErrorField.Text = "Неправильный логин или пароль";
       }
     }
