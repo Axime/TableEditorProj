@@ -23,8 +23,9 @@ namespace TableEditor.VM {
     private void LoadTable(string path) {
       try {
         if (!File.Exists(path) || path == "") return;
-        var data = JsonConvert.DeserializeObject<TableViewModel>(File.ReadAllText(path));
-        DataTables.Add(data);
+       byte[] rawTable =  File.ReadAllBytes(path);
+        var table = TableViewModel.FromBytes(rawTable);
+        DataTables.Add(table);
       } catch (Exception ex) {
         Debug.WriteLine(ex.Message);
       }
@@ -33,8 +34,8 @@ namespace TableEditor.VM {
       try {
         if (!CheckTableIndex()) return;
         TableViewModel toSave = CurrentTable;
-        string jsonData = JsonConvert.SerializeObject(toSave);
-        File.WriteAllText(path, jsonData);
+        byte[] rawTable = CurrentTable.GetRaw();
+        File.WriteAllBytes(path, rawTable);
       } catch (Exception ex) {
         Debug.WriteLine(ex.Message);
       }

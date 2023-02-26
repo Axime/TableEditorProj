@@ -11,9 +11,9 @@ namespace TableEditor.Models
 
     public readonly static Uri baseUri = new(
 #if DEBUG
-      "localhost:3000"
+      "http://localhost:3000"
 #else
-      "http://axime.alwaysdata.net"
+      "https://axime.alwaysdata.net"
 #endif
       );
         private static readonly HttpClient client = new();

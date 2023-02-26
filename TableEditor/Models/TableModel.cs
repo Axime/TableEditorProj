@@ -195,7 +195,7 @@ namespace TableEditor.Models {
           ulong ptr = 0;
           headerLength = (ulong)(name.RawLength() + HeaderReservedBytesCount);
           byte[] bytes = new byte[headerLength];
-          bytes.PlaceString(name, ref ptr);
+          bytes.PlaceString(signature, ref ptr);
           bytes.PlaceInt((int)headerLength, ref ptr);
           bytes.PlaceString(name, ref ptr);
           bytes.PlaceInt(rowCount, ref ptr);
@@ -269,8 +269,8 @@ namespace TableEditor.Models {
             CheckLength(4);
             bytes.PlaceInt(0, ref ptr);
           }
-          Array.Resize(ref bytes, (int)ptr + 1);
-          length = ptr + 1;
+          Array.Resize(ref bytes, (int)ptr);
+          length = ptr;
           return bytes;
         }
 
@@ -308,10 +308,10 @@ namespace TableEditor.Models {
           byte[] bytes = new byte[length];
           bytes.PlaceInt(rowCount, ref ptr);
           bytes.PlaceInt(columnCount, ref ptr);
-          for (int i = 0; i < (int)length; i++, ptr++) {
+          for (int i = 0; i < (int)(length - 8); i++, ptr++) {
             byte b = 0;
             for (int offset = 0; offset < 8; offset++) {
-              int row = Math.DivRem(i * 8 + offset, rowCount, out int col);
+              int row = Math.DivRem(i * 8 + offset, columnCount, out int col);
               byte v;
               if (row < rowCount && col < columnCount) v = data[row, col] ? (byte)1 : (byte)0;
               else continue;
@@ -325,16 +325,20 @@ namespace TableEditor.Models {
         public static BoolTable FromBytes(in byte[] bytes, ref ulong ptr) {
           var rowCount = bytes.GetInt(ref ptr);
           var columnCount = bytes.GetInt(ref ptr);
-          var totalButCount = rowCount * columnCount;
-          var byteCount = (int)Math.Ceiling(totalButCount / 8.0);
+          var totalBitCount = rowCount * columnCount;
+          var byteCount = (int)Math.Ceiling(totalBitCount / 8.0);
           bool[,] data = new bool[rowCount, columnCount];
 
-          for (int i = 0; i < byteCount; i++, ptr++) {
+          bool isEnd = false;
+          for (int i = 0; i < byteCount && !isEnd; i++, ptr++) {
             byte b = bytes[ptr];
             for (int offset = 0; offset < 8; offset++) {
               bool bit = (b >> (7 - offset) & 1) == 1;
-              int row = Math.DivRem(i * 8 + offset, rowCount, out int col);
-              data[row, col] = bit;
+              int row = Math.DivRem(i * 8 + offset, columnCount, out int col);
+              if (i * 8 + offset >= totalBitCount) {
+                isEnd = true; break;
+              }
+                data[row, col] = bit;
             }
           }
           return new(data, rowCount, columnCount);
@@ -395,8 +399,8 @@ namespace TableEditor.Models {
   static class ByteArrayExtensions {
     public static byte[] ToBytes(this int n) {
       var bytes = new byte[4];
-      for (int i = 4; i > 0; i--) {
-        bytes[3 - i] = (byte)((n >> (8 * i)) & 0xFF);
+      for (int i = 0; i < 4; i++) {
+        bytes[i] = (byte)((n >> (8 * (3 - i))) & 0xff);
       }
       return bytes;
     }
@@ -406,7 +410,7 @@ namespace TableEditor.Models {
     }
     public static int GetInt(this byte[] bytes, ref ulong ptr) {
       int res = 0;
-      for (int i = 0; i < 4; i++) res |= bytes[ptr++] << (8 * i);
+      for (int i = 0; i < 4; i++) res |= bytes[ptr++] << (8 * (3 - i));
       return res;
     }
 

@@ -15,14 +15,26 @@ namespace TableEditor.VM {
       set => _table = value;
     }
 
+    public byte[] GetRaw() => model.ToBytes();
+    public static TableViewModel FromBytes(in byte[] bytes) => new(TableModel.FromBytes(bytes));
+
+
     public TableViewModel(string tableName) {
       _title = tableName;
-      model= new TableModel(tableName);
+      model = new TableModel(tableName);
       for (int i = 0; i < 10; i++) {
         AddColumn();
         AddRow();
       }
       AddRow();
+      Update();
+    }
+
+    private TableViewModel(TableModel model) {
+      _title = model.name;
+      this.model = model;
+      for (int i = 0; i < model.RowsCount; i++) AddRow(true);
+      for (int i = 0; i < model.ColumnsCount; i++) AddColumn(i);
       Update();
     }
 
@@ -52,23 +64,32 @@ namespace TableEditor.VM {
 
     public void ToggleView() => isFormulaShows = !isFormulaShows;
 
+    private void AddColumn(int n) {
+      Table.Columns.Add($"{n}", typeof(string));
+    }
+
     public void AddColumn() {
       model.AddColumn();
-      Table.Columns.Add(new DataColumn() { AllowDBNull = true, Caption = $"{model.ColumnsCount}"});
+      Table.Columns.Add($"{model.ColumnsCount}", typeof(string));
       OnPropertyChanged(nameof(Table));
     }
     public void RemoveColumn() {
+      if (model.ColumnsCount < 1) return;
       model.RemoveColumn();
       Table.Columns.RemoveAt(model.ColumnsCount - 1);
     }
 
+    private void AddRow(bool onlyUI) {
+      Table.Rows.Add();
+    }
     public void AddRow() {
       model.AddRow();
       Table.Rows.Add();
     }
     public void RemoveRow() {
+      if (model.RowsCount < 1) return;
       model.RemoveRow();
-      Table.Rows.RemoveAt(model.RowsCount - 1);
+      Table.Rows.RemoveAt(model.RowsCount);
     }
 
     public string GetCellContent(int row, int column) => model.GetValue(row, column);
