@@ -8,7 +8,14 @@ namespace TableEditor.Models
 {
     public static class HTTP
     {
-        public readonly static Uri baseUri = new("http://localhost:3000"); //"https://jsonplaceholder.typicode.com");
+
+    public readonly static Uri baseUri = new(
+#if DEBUG
+      "http://localhost:3000"
+#else
+      "https://axime.alwaysdata.net"
+#endif
+      );
         private static readonly HttpClient client = new();
         private static string _userToken = "undefined";
         public static string UserToken

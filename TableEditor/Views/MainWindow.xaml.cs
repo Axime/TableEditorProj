@@ -14,6 +14,13 @@ namespace Main {
     public MainWindow() {
       InitializeComponent();
       //WorkWindowViewModel MVVM = new();
+      string[] userData = File.ReadAllText("User/nickname.txt").Split(' ');
+      if (userData.Length == 1) return;
+      if (userData[1] == "true") {
+        WorkWindow workWindow = new WorkWindow();
+        workWindow.Show();
+        this.Close();
+      }
     }
 
     void Button_Reg_Click(object sender, RoutedEventArgs e) {
@@ -85,12 +92,19 @@ namespace Main {
         response.IfOk(res => {
           HTTP.UserNickname = LoginField.Text;
           File.WriteAllText("User/nickname.txt", LoginField.Text);
+          if (RememberAuth.IsChecked == true) {
+            File.WriteAllText("User/nickname.txt", LoginField.Text + " true");
+          }
           WorkWindow workWindow = new WorkWindow();
           workWindow.Show();
           this.Close();
+        }).IfError(err => {
+          MessageBox.Show("Неправильный логин или пароль!", "Ошибка");
         });
+        
       } catch (Exception e) {
         Console.WriteLine(e.ToString());
+        MessageBox.Show("Неправильный логин или пароль!","Ошибка");
         ErrorField.Text = "Неправильный логин или пароль";
       }
     }
@@ -99,11 +113,9 @@ namespace Main {
     bool Check(TextBox field) {
       if (field.Text.Length < 6) {
         field.ToolTip = "Incorrect";
-        field.Foreground = Brushes.IndianRed;
         return false;
       }
       field.ToolTip = "Correct";
-      field.Foreground = Brushes.White;
       return true;
     }
 
@@ -114,11 +126,9 @@ namespace Main {
     bool Check(PasswordBox field1, PasswordBox field2) {
       if (field1.Password.Length < 6 || field1.Password != field2.Password) {
         field1.ToolTip = "Incorrect";
-        field1.Foreground = Brushes.IndianRed;
         return false;
       }
       field1.ToolTip = "Correct";
-      field1.Foreground = Brushes.White;
       return true;
     }
   }

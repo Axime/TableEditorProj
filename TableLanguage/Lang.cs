@@ -254,7 +254,12 @@ namespace TableLanguage {
       }
 
       internal static Reference TypeCast(in Reference obj, RuntimeEntityType type) {
-        if (obj == null) throw new ReferenceError();
+        if (obj == null) return type switch {
+          RuntimeEntityType.Number => 0,
+          RuntimeEntityType.Boolean => false,
+          RuntimeEntityType.String => "",
+          _ => throw new ReferenceError($"{nameof(obj)} is null")
+        };
         if (obj.Val?.Type == type) return obj;
         return type switch {
           RuntimeEntityType.Boolean => obj.Val switch {

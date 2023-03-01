@@ -2,11 +2,9 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Data;
-using System.Data.Common;
 using System.IO;
 using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
-using TableEditor.ViewModels;
 
 namespace TableEditor.Models {
   public class EditorModel : INotifyPropertyChanged {
@@ -68,7 +66,7 @@ namespace TableEditor.Models {
     #endregion
 
     #region Методы для работы с контентом таблиц
-    public void AddColumn(int tableNumder, int coumn) {
+/*    public void AddColumn(int tableNumder, int coumn) {
       Tables[tableNumder].AddColumn(coumn);
       OnPropertyChanged();
     }
@@ -95,15 +93,15 @@ namespace TableEditor.Models {
       return rowContent;
     }
 
-    public void SetCellContent(int tableNumber, int column, int row, string content) => Tables[tableNumber].Data.Rows[row][column] = content;
+    public void SetCellContent(int tableNumber, int column, int row, string content) => Tables[tableNumber].Data.Rows[row][column] = content;*/
     #endregion
 
     #region Tools
-    public void Bench(int tableNumber) {
-      for (int i = 0; i < Tables[i].Data.Rows.Count; i++) {
-        SetCellContent(tableNumber, 1, i, i.ToString());
-      }
-    }
+    //public void Bench(int tableNumber) {
+    //  for (int i = 0; i < Tables[i].Data.Rows.Count; i++) {
+    //    SetCellContent(tableNumber, 1, i, i.ToString());
+    //  }
+    //}
     #endregion
 
 
@@ -125,9 +123,9 @@ namespace TableEditor.Models {
         set { _loction = value; _editorModel.OnPropertyChanged(); }
       }
 
-      public void AddColumn(int count) {
+/*      public void AddColumn(int count) {
         for (int i = 0; i < count; i++) {
-          Data.Columns.Add(new DataColumn($"Col {Data.Columns.Count.ToString()}", typeof(string)) { AllowDBNull = true });
+          Data.Columns.Add(new DataColumn($"Col {Data.Columns.Count}", typeof(string)) { AllowDBNull = true });
         }
         Data = Data.Copy();
       }
@@ -143,12 +141,12 @@ namespace TableEditor.Models {
         for (int i = 1; i <= count && Data.Rows.Count > 1; i++)
           Data.Rows.RemoveAt(Data.Rows.Count - 1);
       }
-
+*/
       readonly EditorModel _editorModel;
       public Table(int column, int row) {
         _editorModel = EditorModel.Model;
         _data = new();
-        AddColumn(column); AddRow(row);
+        //AddColumn(column); AddRow(row);
       }
     }
   }

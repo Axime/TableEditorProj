@@ -89,7 +89,9 @@
                     </StackPanel>
                     <Button Command="{Binding CloseTableCommand}" Content="- table" Height="30" Background="#FF2F2F31" BorderBrush="#FF252526"/>
                     <Button Command="{Binding RunFormulasCommand}" Content="RUNFORMULA" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="10"/>
-                    <Button Command="{Binding InvertTableStatusCommand}" Content="🗘" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="10"/>
+                    <Button Command="{Binding ToggleViewMode}" Content="🗘 ChangeView" Background="#FF2F2F31" BorderBrush="#FF252526" Margin="10"/>
+                    <TextBlock Text="{Binding CurrentMode}" Margin="10" FontSize="16" Background="#ff2f2f31" Foreground="White" Padding="10">
+                    </TextBlock>
 
                 </StackPanel>
             </Border>
@@ -104,18 +106,20 @@
                 </TabControl.ItemTemplate>
                 <TabControl.ContentTemplate>
                     <DataTemplate>
-                        <DataGrid  x:Name="Doritos"
+                        <DataGrid
+                            x:Name="Doritos"
                             ItemsSource="{Binding Table}" 
-                                   SelectionMode="Single" 
-                                   SelectionUnit="Cell" 
-                                   GridLinesVisibility="All" 
-                                   MinColumnWidth="80" 
-                                   CanUserSortColumns="False" 
-                                   CanUserAddRows="True" 
-                                   CanUserDeleteRows="True" 
-                                   CellEditEnding="DataGrid_CellEditEnding" 
-                                   PreparingCellForEdit="DataGrid_PreparingCellForEdit"
-                                   >
+                            SelectionMode="Single" 
+                            SelectionUnit="Cell" 
+                            GridLinesVisibility="All" 
+                            MinColumnWidth="80"
+                            CanUserReorderColumns="False"
+                            CanUserSortColumns="False" 
+                            CanUserAddRows="False" 
+                            CanUserDeleteRows="False" 
+                            CellEditEnding="DataGrid_CellEditEnding" 
+                            PreparingCellForEdit="DataGrid_PreparingCellForEdit"
+                         >
                             <DataGrid.CellStyle>
                                 <Style TargetType="DataGridCell" >
                                     <Style.Triggers>
@@ -143,8 +147,7 @@
                 <StackPanel x:Name="PersonalClient" Visibility="Collapsed">
                     <Label Content="Пользователь" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
                     <Label Content="{Binding UserName, Mode=OneWay, TargetNullValue=User__name}" HorizontalAlignment="Center" Margin="0,10,0,0" VerticalAlignment="Top" Foreground="#FFFFFF" FontFamily="Consolas" FontSize="15"/>
-                    <Button Content="Выйти из аккаунта" Margin="20"/>
-                    <Button Content="Выйти" Margin="20"/>
+                    <Button Content="Выйти из аккаунта" Click="Button_Click" Margin="20"/>
                 </StackPanel>
 
 
@@ -207,6 +210,7 @@
 
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Label x:Name="userNickname" Content="{Binding Path=UserName, TargetNullValue=User _nickname}" FontSize="15" FontFamily="Consolas" Height="25"/>
+                <Label Content="{Binding Path=StatusWarning, UpdateSourceTrigger=PropertyChanged}" FontSize="15" FontFamily="Consolas" Height="25"/>
             </StackPanel>
 
         </Border>
