@@ -23,7 +23,7 @@ namespace TableEditor.VM {
     private void LoadTable(string path) {
       try {
         if (!File.Exists(path) || path == "") return;
-       byte[] rawTable =  File.ReadAllBytes(path);
+        byte[] rawTable = File.ReadAllBytes(path);
         var table = TableViewModel.FromBytes(rawTable);
         DataTables.Add(table);
       } catch (Exception ex) {
@@ -209,13 +209,18 @@ namespace TableEditor.VM {
     }
     public void RunFormulas() {
       if (!CheckTableIndex()) return;
+      string error = "Ошибка выполнения формулы";
+      ;
       try {
-        CurrentTable.ExecuteFormulas();
-        StatusWarning = "";
-      } catch {
         StatusWarning = "Ошибка выполнения формулы";
-        MessageBox.Show("Ошибка выполнения формулы","ОШИБКА");
+        CurrentTable.ExecuteFormulas();
+        StatusWarning = error = "";
+      } catch (TableLanguage.Lang.Error e) {
+        error += $":\n{e.Message}";
+      } catch {
+        error = "Неизвестная ошибка";
       }
+      if (error != "") MessageBox.Show(error, "ОШИБКА");
       OnPropertyChanged("Table");
     }
 

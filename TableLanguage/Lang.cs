@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
 
+
 namespace TableLanguage {
   using N = List<Lang.Node>;
   using T = List<Lang.Token>;
   using R = Lang.Runtime.IRuntimeEntity;
   using NameRefDict = Dictionary<string, Lang.Runtime.Reference>;
+  using Reference = Lang.Runtime.Reference;
+  using NativeFunction = Lang.Runtime.NativeFunction;
 
   using NativeFunctionWrapper = Func<
     Lang.Runtime.Runner,
@@ -17,69 +20,97 @@ namespace TableLanguage {
    >;
   public static class Lang {
     private static class StandardLibrary {
-      public interface IObject {
-        public Runtime.Object obj { get; init; }
-        public IObject? Prototype { get; init; }
-      }
-      private record ObjProto : IObject {
-        public Runtime.Object obj { get; init; } = null!;
-        public IObject? Prototype { get; init; }
+
+      public class ObjectProto {
+        public Runtime.Object obj { get; set; } = null!;
+        public Reference Ref => new(obj, true, Reference.RefType.lvalue);
       }
       interface IPrimitiveWrapper<T> {
         public T Value { get; set; }
-        public Runtime.Reference ValueOf();
+        public Reference ValueOf();
       }
       internal static class Prototypes {
-        public static readonly IObject ObjectPrototype = new ObjProto {
-          obj = new Runtime.Object(new() {
-            ["toString"] = new(new Runtime.NativeFunction((f, @this, n) => "[object Object]", "toString"), true, Runtime.Reference.RefType.lvalue),
-            ["__proto__"] = null!,
-          }, null),
-          Prototype = (IObject?)null,
-        };
-        public static readonly IObject NumberPrototype = new ObjProto {
-          obj = new(new() {
-            ["toString"] = new(new Runtime.NativeFunction((env, @this, args) => {
+        // Prototypes has props for class instances
+        // is it __proto__ for instance
+        // and prototype for constructor function
+        // Number.prototype === 0..__proto__
+        public static readonly ObjectProto ObjectPrototype = new();
+        public static readonly ObjectProto NumberPrototype = new();
+        public static readonly ObjectProto FunctionPrototype = new();
+        static Prototypes() {
+          ObjectPrototype.obj = new Runtime.Object(new() {
+            ["toString"] = new(new NativeFunction((f, @this, n) => "[object Object]", "toString"), true, Reference.RefType.lvalue),
+          }, null);
+
+          FunctionPrototype.obj = new(new() {
+            ["toString"] = new(new NativeFunction((f, @this, n) => {
+              if (@this == null) return "anonymous function";
+              if (@this.Val is NativeFunction native) {
+                var name = native.Name ?? "";
+                return $"function {name}() {{ /* Native code */ }}";
+              } else if (@this.Val is Runtime.Function fn) {
+                string args = "";
+                foreach (var arg in fn.func.args) {
+                  args += $", {arg.name}";
+                }
+                return $"function {fn.Name ?? ""}({args}) {{ /* SourceCode */}}";
+              }
+              return "unknow function";
+            }, "toString"), true, Reference.RefType.lvalue)
+          }, ObjectPrototype.obj);
+
+          NumberPrototype.obj = new(new() {
+            ["toString"] = new(new NativeFunction((env, @this, args) => {
+              if (@this == null) return "0";
               var value = Runtime.GetObjectProperty(@this, "valueOf").Val as Runtime.ICallable;
               return (string)value?.Call(env, @this, new())!;
 
-            }, "toString"), true, Runtime.Reference.RefType.lvalue, null, true),
-            ["__proto__"] = new(ObjectPrototype.obj, true, Runtime.Reference.RefType.lvalue, "__proto__", true),
-          }, null),
-          Prototype = ObjectPrototype,
-        };
+            }, "toString"), true, Reference.RefType.lvalue, null, true),
+          }, FunctionPrototype.obj);
+
+
+        }
 
       }
       public static readonly Runtime.Module Global = new(new() {
         ["Math"] = new(new Runtime.Object(new() {
-          ["sin"] = new(new Runtime.NativeFunction((env, @this, args) => {
+          ["sin"] = new(new NativeFunction((env, @this, args) => {
             var arg = (double)args[0];
             return Math.Sin(arg);
           }, "sin"), true, Runtime.Reference.RefType.lvalue, null, true),
           ["cos"] = new(new Runtime.NativeFunction((env, @this, args) => {
             var arg = (double)args[0];
             return Math.Cos(arg);
-          }, "cos"), true, Runtime.Reference.RefType.lvalue, null, true),
-          ["tg"] = new(new Runtime.NativeFunction((env, @this, args) => {
+          }, "cos"), true, Reference.RefType.lvalue, null, true),
+          ["tg"] = new(new NativeFunction((env, @this, args) => {
             var arg = (double)args[0];
             return Math.Tan(arg);
-          }, "tg"), true, Runtime.Reference.RefType.lvalue, null, true)
-        }), true, Runtime.Reference.RefType.lvalue, null, true),
+          }, "tg"), true, Reference.RefType.lvalue, null, true)
+        }), true, Reference.RefType.lvalue, null, true),
+        ["Object"] = new(new NativeFunction((env, @this, args) => {
+          return args[0];
+        }, "Object", new() {
+          ["prototype"] = Prototypes.ObjectPrototype.Ref
+        }), true, isConst: true, type: Reference.RefType.lvalue),
+        ["Number"] = new(new NativeFunction((env, @this, args) => {
+          if (args.Count == 0) return 0;
+          return (double)args[0];
+        }, "Number", new() {
+          ["MAX"] = new(new Runtime.NumberConstant(double.MaxValue), false, Runtime.Reference.RefType.rvalue, null, true),
+          ["prototype"] = Prototypes.NumberPrototype.Ref
+        }), true, type: Reference.RefType.lvalue, isConst: true)
       });
 
-      public class Object : IObject {
-        public IObject? Prototype { get; init; } = Prototypes.ObjectPrototype;
-        public Runtime.Object obj { get; init; } = new(new() { });
+      public class Object : ObjectProto {
+        public new Runtime.Object obj { get; set; } = new(new() { });
         public Object(Runtime.Object obj) {
           this.obj = obj;
         }
       }
-      public class Number : IPrimitiveWrapper<double>, IObject {
-        public IObject? Prototype { get; init; } = Prototypes.NumberPrototype;
-        public Runtime.Object obj { get; init; } = new(new() {
-          ["MAX"] = new(new Runtime.NumberConstant(double.MaxValue), false, Runtime.Reference.RefType.rvalue, null, true),
+      public class Number : ObjectProto, IPrimitiveWrapper<double> {
+        public new Runtime.Object obj { get; set; } = new(new() {
           ["__proto__"] = new(Prototypes.NumberPrototype.obj, true, Runtime.Reference.RefType.lvalue, null, true),
-        });
+        }, null);
         public double Value { get; set; }
         public Number(double v = 0) {
           Value = v;
@@ -147,11 +178,14 @@ namespace TableLanguage {
         public Reference? Call(Runner env, Reference? owner, List<Reference> args);
       }
 
-      internal class Function : ICallable {
-        Statements.FunctionDeclarationStatement func;
-        public RuntimeEntityType Type => RuntimeEntityType.Function;
+      internal class Function : Object, ICallable {
+        public Statements.FunctionDeclarationStatement func;
+        public new RuntimeEntityType Type => RuntimeEntityType.Function;
         public string? Name => func.name;
-        public Function(Statements.FunctionDeclarationStatement func) {
+        public Function(Statements.FunctionDeclarationStatement func) : base(new() {
+          ["name"] = func.name ?? "",
+          ["length"] = func.args.Count,
+        }) {
           this.func = func;
         }
         public Reference? Call(Runner env, Reference? owner, List<Reference> args) {
@@ -168,17 +202,31 @@ namespace TableLanguage {
         }
       }
 
-      public class NativeFunction : ICallable {
-        public RuntimeEntityType Type => RuntimeEntityType.Function;
+      public class NativeFunction : Object, ICallable {
+        public new RuntimeEntityType Type => RuntimeEntityType.Function;
         public string? Name;
         public NativeFunctionWrapper func;
-        public NativeFunction(NativeFunctionWrapper func, string? name) {
+        public NativeFunction(
+          NativeFunctionWrapper func,
+          string? name,
+          NameRefDict? props = null
+        ) : base(
+          new() {
+            ["name"] = name ?? "",
+            ["length"] = func.Method.GetParameters().Length,
+          }
+        ) {
+          if (props != null) {
+            foreach (var (key, prop) in props) {
+              this.props.TryAdd(key, prop);
+            }
+          }
           this.func = func;
           this.Name = name;
         }
         public Reference? Call(Runner env, Reference? owner, List<Reference> args) => func(env, owner, args);
       }
-      internal class Object : R {
+      public class Object : R {
         public RuntimeEntityType Type => RuntimeEntityType.Object;
         public NameRefDict props = new();
         public Object(NameRefDict props) : this(props, StandardLibrary.Prototypes.ObjectPrototype.obj) { }
@@ -230,11 +278,11 @@ namespace TableLanguage {
         // get property name as string
         string propName = (string)name;
         if (propName == null) throw new ReferenceError("Cannot cast property name to \"string\"");
-        if (obj.Val == null) throw new ReferenceError("Cannot read property of null");
+        if (obj.Val == null) throw new ReferenceError($"Cannot read property of null (reading {propName})");
         if (obj.Val is Object o) {
           Object tmp = o;
           // if current object doesn't have property check it's prototype
-          do if (tmp.props.TryGetValue(propName, out var value)) return new Reference(value.Val, true, Reference.RefType.lvalue, obj, false, propName);
+          do if (tmp.props.TryGetValue(propName, out var value)) return new Reference(value?.Val, true, Reference.RefType.lvalue, obj, false, propName);
           while ((tmp.props.TryGetValue("__proto__", out var proto) && (tmp = (proto.Val as Object)!) != null));
           return new Reference(null, true, Reference.RefType.rvalue, null, true, propName);
         } else if (obj.Val is StringConstant oStr) {
@@ -257,7 +305,7 @@ namespace TableLanguage {
         if (obj == null) return type switch {
           RuntimeEntityType.Number => 0,
           RuntimeEntityType.Boolean => false,
-          RuntimeEntityType.String => "",
+          RuntimeEntityType.String => "null",
           _ => throw new ReferenceError($"{nameof(obj)} is null")
         };
         if (obj.Val?.Type == type) return obj;
@@ -284,6 +332,7 @@ namespace TableLanguage {
             NativeFunction { Name: var n } => $"function {(n ?? "")}() {{ [native code] }}",
             Function { Name: var n } => $"function {n}() {{}}",
             Object => "[object Object]",
+            null => "null",
             _ => throw new NotImplementedException(),
 
           },

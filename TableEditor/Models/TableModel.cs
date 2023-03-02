@@ -8,7 +8,7 @@ namespace TableEditor.Models {
       TableModuleProps.Add("cell", new(new TableLanguage.Lang.Runtime.NativeFunction((env, @this, args) => {
         var row = args[0];
         var col = args[1];
-        return GetValue((int)row, (int)col) ?? "";
+        return GetValue((int)row - 1, (int)col - 1) ?? "";
       }, "cell"), true, TableLanguage.Lang.Runtime.Reference.RefType.lvalue, null, true));
     }
 

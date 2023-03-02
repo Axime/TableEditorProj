@@ -34,7 +34,7 @@ namespace TableEditor.VM {
       _title = model.name;
       this.model = model;
       for (int i = 0; i < model.RowsCount; i++) AddRow(true);
-      for (int i = 0; i < model.ColumnsCount; i++) AddColumn(i);
+      for (int i = 0; i < model.ColumnsCount; i++) AddColumn(i + 1);
       Update();
     }
 
