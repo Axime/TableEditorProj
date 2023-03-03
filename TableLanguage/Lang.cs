@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Linq;
-
+using System.ComponentModel.DataAnnotations;
 
 namespace TableLanguage {
   using N = List<Lang.Node>;
@@ -323,7 +323,7 @@ namespace TableLanguage {
             BooleanConstant b when b.value => 1,
             BooleanConstant => 0,
             Object or Function or NativeFunction => double.NaN,
-            StringConstant { str: var str } => double.Parse(str),
+            StringConstant { str: var str } => double.TryParse(str, out var res) ? res : double.NaN,
             _ => throw new NotImplementedException()
           },
           RuntimeEntityType.String => obj.Val switch {
@@ -539,11 +539,21 @@ namespace TableLanguage {
           return ExecNode(node);
         }
         private Reference ExecUnaryOperator(in Reference operand, in Nodes.OperatorNode op) {
+          Reference ExecPrefix(in Reference operand, bool decrement = false) {
+            if (operand.type == Reference.RefType.rvalue) throw new Error("Invalid left-hand side expression in prefix operation");
+            if (operand.Val is not NumberConstant) {
+              operand.Val = new NumberConstant((double)operand);
+            }
+            if (decrement) return --(operand.Val as NumberConstant)!.value;
+            return ++(operand.Val as NumberConstant)!.value;
+          };
           return op.text switch {
             "!" => !(bool)operand,
             "~" => ~(long)operand,
             "+" => (long)operand,
             "-" => -(long)operand,
+            "++" => ExecPrefix(operand),
+            "--" => ExecPrefix(operand, true),
             _ => throw new ArgumentException(),
           };
         }
@@ -816,7 +826,7 @@ namespace TableLanguage {
         public string text;
         public int pos;
         public OperatorNode(in Token op, bool isUnary = false) {
-          if (!Operators.TryGetValue($"{op.type.name}{(isUnary ? "_unary" : "")}", out var type)) throw new Exception($"Unknown operator{op.text}");
+          if (!Operators.TryGetValue($"{op.type.name}{(isUnary ? "_unary" : "")}", out var type)) throw new SyntaxError($"Unknown operator{op.text}");
           this.type = type;
           text = op.text;
           pos = op.pos;
@@ -1340,6 +1350,8 @@ namespace TableLanguage {
             || CurrentToken == TokenNames.Subtract_operator
             || CurrentToken == TokenNames.BitwiseNot_operator
             || CurrentToken == TokenNames.LogicNot_operator
+            || CurrentToken == TokenNames.Decrement_operator
+            || CurrentToken == TokenNames.Increment_operator
           ) return ParseUnaryOperator();
           if (CurrentToken == TokenNames.Function) return ParseFunctionDeclaration(true);
           MoveToNextToken();
@@ -1460,6 +1472,8 @@ namespace TableLanguage {
       [$"{TokenNames.Subtract_operator}_unary"] = new(19, OperatorDirection.NonBinary), // -expr
       [$"{TokenNames.LogicNot_operator}_unary"] = new(19, OperatorDirection.NonBinary), // !expr
       [$"{TokenNames.BitwiseNot_operator}_unary"] = new(19, OperatorDirection.NonBinary), // ~expr
+      [$"{TokenNames.Increment_operator}_unary"] = new(19, OperatorDirection.NonBinary), // ++expr
+      [$"{TokenNames.Decrement_operator}_unary"] = new(19, OperatorDirection.NonBinary), // --expr
       [TokenNames.OpRndBracket] = 20,
       [TokenNames.OpSqBracket] = 20,
       [TokenNames.Dot_operator] = 21, // variable.member
